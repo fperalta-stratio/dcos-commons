@@ -4,14 +4,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mesosphere.sdk.curator.CuratorUtils;
+import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.framework.FrameworkConfig;
 import com.mesosphere.sdk.http.types.EndpointProducer;
 import com.mesosphere.sdk.kafka.api.BrokerResource;
@@ -19,7 +18,6 @@ import com.mesosphere.sdk.kafka.api.KafkaZKClient;
 import com.mesosphere.sdk.kafka.api.TopicResource;
 import com.mesosphere.sdk.kafka.cmd.CmdExecutor;
 import com.mesosphere.sdk.scheduler.DefaultScheduler;
-import com.mesosphere.sdk.scheduler.EnvStore;
 import com.mesosphere.sdk.scheduler.SchedulerBuilder;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
 import com.mesosphere.sdk.scheduler.SchedulerRunner;
@@ -37,6 +35,9 @@ public class Main {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expected one file argument, got: " + Arrays.toString(args));
         }
+
+        Capabilities.getInstance().allowRegionAwareness();
+
         SchedulerRunner
                 .fromSchedulerBuilder(createSchedulerBuilder(new File(args[0])))
                 .run();
@@ -45,9 +46,7 @@ public class Main {
     private static SchedulerBuilder createSchedulerBuilder(File yamlSpecFile) throws Exception {
         RawServiceSpec rawServiceSpec = RawServiceSpec.newBuilder(yamlSpecFile).build();
 
-        Map<String, String> env = new HashMap<>(System.getenv());
-        env.put("ALLOW_REGION_AWARENESS", "true");
-        SchedulerConfig schedulerConfig = SchedulerConfig.fromEnvStore(EnvStore.fromMap(env));
+        SchedulerConfig schedulerConfig = SchedulerConfig.fromEnv();
 
         // Allow users to manually specify a ZK location for kafka itself. Otherwise default to our service ZK location:
         String kafkaZookeeperUri = System.getenv(KAFKA_ZK_URI_ENV);

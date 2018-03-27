@@ -1,6 +1,3 @@
-"""
-This module tests the interaction of Kafka with Zookeeper with authentication enabled
-"""
 import logging
 import uuid
 import pytest
@@ -10,10 +7,11 @@ import sdk_cmd
 import sdk_hosts
 import sdk_install
 import sdk_marathon
-import sdk_security
 import sdk_utils
 
-from security import kerberos as krb5
+
+from security import transport_encryption
+
 
 from tests import auth
 from tests import config
@@ -23,18 +21,21 @@ from tests import test_utils
 log = logging.getLogger(__name__)
 
 
-def get_zookeeper_principals(service_name: str, realm: str) -> list:
-    primaries = ["zookeeper", ]
+pytestmark = pytest.mark.skipif(sdk_utils.is_open_dcos(),
+                                reason='Feature only supported in DC/OS EE')
 
-    tasks = [
-        "zookeeper-0-server",
-        "zookeeper-1-server",
-        "zookeeper-2-server",
-    ]
-    instances = map(lambda task: sdk_hosts.autoip_host(service_name, task), tasks)
 
-    principals = krb5.generate_principal_list(primaries, instances, realm)
-    return principals
+@pytest.fixture(scope='module', autouse=True)
+def service_account(configure_security):
+    """
+    Sets up a service account for use with TLS.
+    """
+    try:
+        service_account_info = transport_encryption.setup_service_account(config.SERVICE_NAME)
+
+        yield service_account_info
+    finally:
+        transport_encryption.cleanup_service_account(config.SERVICE_NAME, service_account_info)
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -43,10 +44,8 @@ def kerberos(configure_security):
         kerberos_env = sdk_auth.KerberosEnvironment()
 
         principals = auth.get_service_principals(config.SERVICE_NAME,
-                                                 kerberos_env.get_realm())
-        principals.extend(get_zookeeper_principals(config.ZOOKEEPER_SERVICE_NAME,
-                                                   kerberos_env.get_realm()))
-
+                                                 kerberos_env.get_realm(),
+                                                 sdk_hosts.get_crypto_id_domain())
         kerberos_env.add_principals(principals)
         kerberos_env.finalize()
 
@@ -56,79 +55,33 @@ def kerberos(configure_security):
         kerberos_env.cleanup()
 
 
-@pytest.fixture(scope='module')
-def zookeeper_server(kerberos):
-    service_kerberos_options = {
-        "service": {
-            "name": config.ZOOKEEPER_SERVICE_NAME,
-            "security": {
-                "kerberos": {
-                    "enabled": True,
-                    "kdc": {
-                        "hostname": kerberos.get_host(),
-                        "port": int(kerberos.get_port())
-                    },
-                    "realm": sdk_auth.REALM,
-                    "keytab_secret": kerberos.get_keytab_path(),
-                }
-            }
-        }
-    }
-
-    zk_account = "kafka-zookeeper-service-account"
-    zk_secret = "kakfa-zookeeper-secret"
-
-    if sdk_utils.is_strict_mode():
-        service_kerberos_options = sdk_install.merge_dictionaries({
-            'service': {
-                'service_account': zk_account,
-                'service_account_secret': zk_secret,
-            }
-        }, service_kerberos_options)
-
-    try:
-        sdk_install.uninstall(config.ZOOKEEPER_PACKAGE_NAME, config.ZOOKEEPER_SERVICE_NAME)
-        sdk_security.setup_security(config.ZOOKEEPER_SERVICE_NAME, zk_account, zk_secret)
-        sdk_install.install(
-            config.ZOOKEEPER_PACKAGE_NAME,
-            config.ZOOKEEPER_SERVICE_NAME,
-            config.ZOOKEEPER_TASK_COUNT,
-            additional_options=service_kerberos_options,
-            timeout_seconds=30 * 60,
-            insert_strict_options=False)
-
-        yield {**service_kerberos_options, **{"package_name": config.ZOOKEEPER_PACKAGE_NAME}}
-
-    finally:
-        sdk_install.uninstall(config.ZOOKEEPER_PACKAGE_NAME, config.ZOOKEEPER_SERVICE_NAME)
-
-
 @pytest.fixture(scope='module', autouse=True)
-def kafka_server(kerberos, zookeeper_server):
+def kafka_server(kerberos, service_account):
+    """
+    A pytest fixture that installs a Kerberized kafka service.
 
-    # Get the zookeeper DNS values
-    zookeeper_dns = sdk_cmd.svc_cli(zookeeper_server["package_name"],
-                                    zookeeper_server["service"]["name"],
-                                    "endpoint clientport", json=True)["dns"]
-
+    On teardown, the service is uninstalled.
+    """
     service_kerberos_options = {
         "service": {
             "name": config.SERVICE_NAME,
+            "service_account": service_account["name"],
+            "service_account_secret": service_account["secret"],
             "security": {
+                "custom_domain": sdk_hosts.get_crypto_id_domain(),
                 "kerberos": {
                     "enabled": True,
-                    "enabled_for_zookeeper": True,
                     "kdc": {
                         "hostname": kerberos.get_host(),
                         "port": int(kerberos.get_port())
                     },
                     "realm": sdk_auth.REALM,
                     "keytab_secret": kerberos.get_keytab_path(),
+                },
+                "transport_encryption": {
+                    "enabled": True
                 }
             }
-        },
-        "kafka": {
-            "kafka_zookeeper_uri": ",".join(zookeeper_dns)
         }
     }
 
@@ -152,13 +105,14 @@ def kafka_client(kerberos, kafka_server):
     brokers = sdk_cmd.svc_cli(
         kafka_server["package_name"],
         kafka_server["service"]["name"],
-        "endpoint broker", json=True)["dns"]
+        "endpoint broker-tls", json=True)["dns"]
 
     try:
         client_id = "kafka-client"
         client = {
             "id": client_id,
             "mem": 512,
+            "user": "nobody",
             "container": {
                 "type": "MESOS",
                 "docker": {
@@ -192,7 +146,13 @@ def kafka_client(kerberos, kafka_server):
         }
 
         sdk_marathon.install_app(client)
-        yield {**client, **{"brokers": list(map(lambda x: x.split(':')[0], brokers))}}
+
+        transport_encryption.create_tls_artifacts(
+            cn="client",
+            marathon_task=client_id)
+
+        broker_hosts = list(map(lambda x: x.split(':')[0], brokers))
+        yield {**client, **{"brokers": broker_hosts}}
 
     finally:
         sdk_marathon.destroy_app(client_id)
@@ -200,7 +160,6 @@ def kafka_client(kerberos, kafka_server):
 
 @pytest.mark.dcos_min_version('1.10')
 @sdk_utils.dcos_ee_only
-@pytest.mark.zookeeper
 @pytest.mark.sanity
 def test_client_can_read_and_write(kafka_client, kafka_server, kerberos):
     client_id = kafka_client["id"]
@@ -221,15 +180,23 @@ def test_client_can_read_and_write(kafka_client, kafka_server, kerberos):
     assert message in read_from_topic("client", client_id, topic_name, 1, kerberos)
 
 
+def get_client_properties(cn: str) -> str:
+    client_properties_lines = []
+    client_properties_lines.extend(auth.get_kerberos_client_properties(ssl_enabled=True))
+    client_properties_lines.extend(auth.get_ssl_client_properties(cn, True))
+
+    return client_properties_lines
+
+
 def write_to_topic(cn: str, task: str, topic: str, message: str, krb5: object) -> bool:
 
     return auth.write_to_topic(cn, task, topic, message,
-                               auth.get_kerberos_client_properties(ssl_enabled=False),
-                               auth.setup_krb5_env(cn, task, krb5))
+                               get_client_properties(cn),
+                               environment=auth.setup_krb5_env(cn, task, krb5))
 
 
-def read_from_topic(cn: str, task: str, topic: str, message: str, krb5: object) -> str:
+def read_from_topic(cn: str, task: str, topic: str, messages: int, krb5: object) -> str:
 
-    return auth.read_from_topic(cn, task, topic, message,
-                                auth.get_kerberos_client_properties(ssl_enabled=False),
-                                auth.setup_krb5_env(cn, task, krb5))
+    return auth.read_from_topic(cn, task, topic, messages,
+                                get_client_properties(cn),
+                                environment=auth.setup_krb5_env(cn, task, krb5))

@@ -1,5 +1,6 @@
 package com.mesosphere.sdk.scheduler;
 
+import com.mesosphere.sdk.offer.Constants;
 import com.mesosphere.sdk.state.GoalStateOverride;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.apache.mesos.Protos.Credential;
@@ -27,7 +28,6 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -140,6 +140,11 @@ public class SchedulerConfig {
     private static final String ALLOW_REGION_AWARENESS_ENV = "ALLOW_REGION_AWARENESS";
 
     /**
+     * Environment variable for setting a custom TLD for the service (replaces Constants.TLD_NET).
+     */
+    private static final String USER_SPECIFIED_TLD_ENVVAR = "SERVICE_TLD";
+
+    /**
      * We print the build info here because this is likely to be a very early point in the service's execution. In a
      * multi-service situation, however, this code may be getting invoked multiple times, so only print if we haven't
      * printed before.
@@ -151,16 +156,6 @@ public class SchedulerConfig {
      */
     public static SchedulerConfig fromEnv() {
         return fromEnvStore(EnvStore.fromEnv());
-    }
-
-    /**
-     * Returns a new {@link SchedulerConfig} instance which is based off the provided custom environment map.
-     *
-     * @deprecated use {@code fromEnvStore(EnvStore.fromMap())} instead
-     */
-    @Deprecated
-    public static SchedulerConfig fromMap(Map<String, String> map) {
-        return fromEnvStore(EnvStore.fromMap(map));
     }
 
     /**
@@ -356,6 +351,13 @@ public class SchedulerConfig {
      */
     public long getImplicitReconcileDelayMs() {
         return envStore.getOptionalLong(IMPLICIT_RECONCILIATION_DELAY_MS_ENV, 0 /* no delay */);
+    }
+
+    /**
+     * Returns the {@code autoip} service TLD to be used in advertised endpoints.
+     */
+    public String getServiceTLD() {
+        return envStore.getOptional(USER_SPECIFIED_TLD_ENVVAR, Constants.DNS_TLD);
     }
 
     /**

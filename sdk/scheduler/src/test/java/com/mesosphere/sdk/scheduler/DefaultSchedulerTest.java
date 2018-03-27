@@ -3,6 +3,7 @@ package com.mesosphere.sdk.scheduler;
 import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.dcos.DcosVersion;
 import com.mesosphere.sdk.framework.Driver;
+import com.mesosphere.sdk.framework.TaskKiller;
 import com.mesosphere.sdk.offer.Constants;
 import com.mesosphere.sdk.offer.LaunchOfferRecommendation;
 import com.mesosphere.sdk.offer.LoggingUtils;
@@ -30,8 +31,10 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Protos.Offer;
 import org.apache.mesos.SchedulerDriver;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ExpectedSystemExit;
@@ -175,6 +178,26 @@ public class DefaultSchedulerTest {
 
     private Persister persister;
     private DefaultScheduler defaultScheduler;
+
+    @BeforeClass
+    public static void beforeAll() {
+        // Disable background TaskKiller thread, to avoid erroneous kill invocations
+        try {
+            TaskKiller.reset(false);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @AfterClass
+    public static void afterAll() {
+        // Re-enable TaskKiller thread
+        try {
+            TaskKiller.reset(false);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     @Before
     public void beforeEach() throws Exception {

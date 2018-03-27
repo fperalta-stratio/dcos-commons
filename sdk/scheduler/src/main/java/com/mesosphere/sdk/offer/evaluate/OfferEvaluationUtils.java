@@ -42,13 +42,20 @@ class OfferEvaluationUtils {
     }
 
     static ReserveEvaluationOutcome evaluateSimpleResource(
-            String serviceName,
             OfferEvaluationStage offerEvaluationStage,
             ResourceSpec resourceSpec,
             Optional<String> resourceId,
+            Optional<String> resourceNamespace,
             MesosResourcePool mesosResourcePool) {
 
-        Optional<MesosResource> mesosResourceOptional = consume(resourceSpec, resourceId, mesosResourcePool);
+        Optional<MesosResource> mesosResourceOptional;
+        if (!resourceId.isPresent()) {
+            mesosResourceOptional = mesosResourcePool.consumeReservableMerged(
+                    resourceSpec.getName(), resourceSpec.getValue(), resourceSpec.getPreReservedRole());
+        } else {
+            mesosResourceOptional = mesosResourcePool.consumeReserved(
+                    resourceSpec.getName(), resourceSpec.getValue(), resourceId.get());
+        }
         if (!mesosResourceOptional.isPresent()) {
             return new ReserveEvaluationOutcome(
                     fail(
@@ -72,7 +79,7 @@ class OfferEvaluationUtils {
 
             if (!resourceId.isPresent()) {
                 // Initial reservation of resources
-                Protos.Resource resource = ResourceBuilder.fromSpec(serviceName, resourceSpec, resourceId)
+                Protos.Resource resource = ResourceBuilder.fromSpec(resourceSpec, resourceId, resourceNamespace)
                         .setMesosResource(mesosResource)
                         .build();
                 offerRecommendation = new ReserveOfferRecommendation(mesosResourcePool.getOffer(), resource);
@@ -133,13 +140,11 @@ class OfferEvaluationUtils {
                 }
 
                 mesosResource = mesosResourceOptional.get();
-                Protos.Resource resource = ResourceBuilder.fromSpec(serviceName, resourceSpec, resourceId)
+                Protos.Resource resource = ResourceBuilder.fromSpec(resourceSpec, resourceId, resourceNamespace)
                         .setValue(mesosResource.getValue())
                         .build();
                 // Reservation of additional resources
-                offerRecommendation = new ReserveOfferRecommendation(
-                        mesosResourcePool.getOffer(),
-                        resource);
+                offerRecommendation = new ReserveOfferRecommendation(mesosResourcePool.getOffer(), resource);
                 return new ReserveEvaluationOutcome(
                         pass(
                                 offerEvaluationStage,
@@ -160,13 +165,11 @@ class OfferEvaluationUtils {
                         TextFormat.shortDebugString(resourceSpec.getValue()),
                         TextFormat.shortDebugString(unreserve));
 
-                Protos.Resource resource = ResourceBuilder.fromSpec(serviceName, resourceSpec, resourceId)
+                Protos.Resource resource = ResourceBuilder.fromSpec(resourceSpec, resourceId, resourceNamespace)
                         .setValue(unreserve)
                         .build();
                 // Unreservation of no longer needed resources
-                offerRecommendation = new UnreserveOfferRecommendation(
-                        mesosResourcePool.getOffer(),
-                        resource);
+                offerRecommendation = new UnreserveOfferRecommendation(mesosResourcePool.getOffer(), resource);
                 return new ReserveEvaluationOutcome(
                         pass(
                                 offerEvaluationStage,
@@ -197,22 +200,6 @@ class OfferEvaluationUtils {
         } else {
             Protos.ExecutorInfo.Builder executorBuilder = podInfoBuilder.getExecutorBuilder().get();
             executorBuilder.addResources(resource);
-        }
-    }
-
-
-    private static Optional<MesosResource> consume(
-            ResourceSpec resourceSpec,
-            Optional<String> resourceId,
-            MesosResourcePool pool) {
-
-        if (!resourceId.isPresent()) {
-            return pool.consumeReservableMerged(
-                    resourceSpec.getName(),
-                    resourceSpec.getValue(),
-                    resourceSpec.getPreReservedRole());
-        } else {
-            return pool.consumeReserved(resourceSpec.getName(), resourceSpec.getValue(), resourceId.get());
         }
     }
 

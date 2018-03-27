@@ -23,6 +23,7 @@ import static com.mesosphere.sdk.offer.Constants.PORTS_RESOURCE_TYPE;
  * Various utility methods for manipulating data in {@link TaskInfo}s.
  */
 public class TaskUtils {
+
     private static final Logger LOGGER = LoggingUtils.getLogger(TaskUtils.class);
 
     private TaskUtils() {
@@ -550,42 +551,6 @@ public class TaskUtils {
      */
     public static String getStepName(PodInstance podInstance, Collection<String> tasksToLaunch) {
         return podInstance.getName() + ":" + tasksToLaunch;
-    }
-
-    /**
-     * Returns TaskInfos will all reservations and persistence IDs removed from their Resources.
-     */
-    public static Collection<Protos.TaskInfo> clearReservations(
-            String serviceName, Collection<Protos.TaskInfo> taskInfos) {
-        return taskInfos.stream()
-                .map(taskInfo -> clearReservationIds(serviceName, taskInfo))
-                .collect(Collectors.toList());
-    }
-
-    private static Protos.TaskInfo clearReservationIds(String serviceName, Protos.TaskInfo taskInfo) {
-        Protos.TaskInfo.Builder taskInfoBuilder = Protos.TaskInfo.newBuilder(taskInfo)
-                .clearResources()
-                .addAllResources(clearReservationIds(serviceName, taskInfo.getResourcesList()));
-
-        if (taskInfo.hasExecutor()) {
-            taskInfoBuilder.getExecutorBuilder()
-                    .clearResources()
-                    .addAllResources(
-                            clearReservationIds(serviceName, taskInfoBuilder.getExecutor().getResourcesList()));
-        }
-
-        return taskInfoBuilder.build();
-    }
-
-    private static List<Protos.Resource> clearReservationIds(String serviceName, List<Protos.Resource> resources) {
-        List<Protos.Resource> clearedResources = new ArrayList<>();
-        for (Protos.Resource resource : resources) {
-            clearedResources.add(ResourceBuilder.fromExistingResource(serviceName, resource)
-                    .clearResourceId()
-                    .clearPersistenceId()
-                    .build());
-        }
-        return clearedResources;
     }
 
     /**

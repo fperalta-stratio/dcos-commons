@@ -19,27 +19,34 @@ import java.util.stream.Collectors;
 class TaskResourceMapper {
 
     private final Logger logger;
-    private final String serviceName;
+
+    private final Optional<String> resourceNamespace;
     private final String taskSpecName;
     private final List<Protos.Resource> orphanedResources = new ArrayList<>();
-    private final List<OfferEvaluationStage> evaluationStages;
     private final Collection<ResourceSpec> resourceSpecs;
     private final TaskPortLookup taskPortFinder;
     private final Collection<Protos.Resource> resources;
     private final boolean useDefaultExecutor;
 
+    private final List<OfferEvaluationStage> evaluationStages;
+
     public TaskResourceMapper(
-            String serviceName, TaskSpec taskSpec, Protos.TaskInfo taskInfo, boolean useDefaultExecutor) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
-        this.serviceName = serviceName;
+            TaskSpec taskSpec,
+            Protos.TaskInfo taskInfo,
+            Optional<String> resourceNamespace,
+            boolean useDefaultExecutor) {
+        this.logger = LoggingUtils.getLogger(getClass(), resourceNamespace);
+        this.resourceNamespace = resourceNamespace;
         this.taskSpecName = taskSpec.getName();
         this.resourceSpecs = new ArrayList<>();
         this.resourceSpecs.addAll(taskSpec.getResourceSet().getResources());
         this.resourceSpecs.addAll(taskSpec.getResourceSet().getVolumes());
         this.taskPortFinder = new TaskPortLookup(taskInfo);
         this.resources = taskInfo.getResourcesList();
-        this.evaluationStages = getEvaluationStagesInternal();
         this.useDefaultExecutor = useDefaultExecutor;
+
+        // ONLY call this AFTER initializing all members above:
+        this.evaluationStages = getEvaluationStagesInternal();
     }
 
     public List<Protos.Resource> getOrphanedResources() {
@@ -218,20 +225,21 @@ class TaskResourceMapper {
             Optional<String> persistenceId,
             Optional<String> sourceRoot) {
         if (resourceSpec instanceof NamedVIPSpec) {
-            return new NamedVIPEvaluationStage(serviceName, (NamedVIPSpec) resourceSpec, taskSpecName, resourceId);
+            return new NamedVIPEvaluationStage(
+                    (NamedVIPSpec) resourceSpec, taskSpecName, resourceId, resourceNamespace);
         } else if (resourceSpec instanceof PortSpec) {
-            return new PortEvaluationStage(serviceName, (PortSpec) resourceSpec, taskSpecName, resourceId);
+            return new PortEvaluationStage((PortSpec) resourceSpec, taskSpecName, resourceId, resourceNamespace);
         } else if (resourceSpec instanceof VolumeSpec) {
             return VolumeEvaluationStage.getExisting(
-                    serviceName,
                     (VolumeSpec) resourceSpec,
-                    taskSpecName,
+                    Optional.of(taskSpecName),
                     resourceId,
+                    resourceNamespace,
                     persistenceId,
                     sourceRoot,
                     useDefaultExecutor);
         } else {
-            return new ResourceEvaluationStage(serviceName, resourceSpec, taskSpecName, resourceId);
+            return new ResourceEvaluationStage(resourceSpec, Optional.of(taskSpecName), resourceId, resourceNamespace);
         }
     }
 }

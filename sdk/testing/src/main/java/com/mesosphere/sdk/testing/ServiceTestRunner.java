@@ -6,9 +6,11 @@ import com.mesosphere.sdk.framework.FrameworkConfig;
 import com.mesosphere.sdk.framework.FrameworkScheduler;
 import com.mesosphere.sdk.framework.ReviveManager;
 import com.mesosphere.sdk.framework.TaskKiller;
+import com.mesosphere.sdk.offer.Constants;
 import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.offer.evaluate.PodInfoBuilder;
 import com.mesosphere.sdk.scheduler.DefaultScheduler;
+import com.mesosphere.sdk.scheduler.SchedulerBuilder;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
 import com.mesosphere.sdk.scheduler.AbstractScheduler;
 import com.mesosphere.sdk.scheduler.plan.DefaultPodInstance;
@@ -58,6 +60,7 @@ public class ServiceTestRunner {
     private final Map<String, Map<String, String>> customPodEnvs = new HashMap<>();
     private RecoveryPlanOverriderFactory recoveryManagerFactory;
     private boolean supportsDefaultExecutor = true;
+    private Optional<String> namespace = Optional.empty();
     private List<ConfigValidator<ServiceSpec>> validators = new ArrayList<>();
 
     /**
@@ -245,8 +248,12 @@ public class ServiceTestRunner {
     }
 
     /**
+<<<<<<< HEAD
      * Assigns a list of custom configuration validators which will be applied to service configurations, in addition to
      * the default configuration validators.
+=======
+     * Adds a custom config validator to the validators to be used by the service.
+>>>>>>> master
      */
     public ServiceTestRunner addCustomValidator(ConfigValidator<ServiceSpec> validator) {
         this.validators.add(validator);
@@ -256,10 +263,20 @@ public class ServiceTestRunner {
     /**
      * Simulates DC/OS 1.9 behavior of using a custom executor instead of the default executor.
      *
-     * Individual services shouldn't need to use this, it's more for testing of the SDK itself.
+     * Individual service tests shouldn't need to use this, it's more for testing features of the SDK itself.
      */
     public ServiceTestRunner setUseCustomExecutor() {
         this.supportsDefaultExecutor = false;
+        return this;
+    }
+
+    /**
+     * Simulates running the service within a configured namespace.
+     *
+     * Individual service tests shouldn't need to use this, it's more for testing features of the SDK itself.
+     */
+    public ServiceTestRunner setNamespace(String namespace) {
+        this.namespace = Optional.of(namespace);
         return this;
     }
 
@@ -289,6 +306,7 @@ public class ServiceTestRunner {
         Mockito.when(mockSchedulerConfig.getBootstrapURI()).thenReturn("bootstrap-uri");
         Mockito.when(mockSchedulerConfig.getApiServerPort()).thenReturn(8080);
         Mockito.when(mockSchedulerConfig.getDcosSpace()).thenReturn("test-space");
+        Mockito.when(mockSchedulerConfig.getServiceTLD()).thenReturn(Constants.DNS_TLD);
 
         Capabilities mockCapabilities = Mockito.mock(Capabilities.class);
         Mockito.when(mockCapabilities.supportsGpuResource()).thenReturn(true);
@@ -322,32 +340,35 @@ public class ServiceTestRunner {
                 rawServiceSpec, mockSchedulerConfig, schedulerEnvironment, configTemplateDir).build();
 
         // Test 3: Does the scheduler build?
-        AbstractScheduler serviceScheduler = DefaultScheduler.newBuilder(serviceSpec, mockSchedulerConfig, persister)
+        SchedulerBuilder schedulerBuilder = DefaultScheduler.newBuilder(serviceSpec, mockSchedulerConfig, persister)
                 .setPlansFrom(rawServiceSpec)
                 .setRecoveryManagerFactory(recoveryManagerFactory)
-                .setCustomConfigValidators(validators)
-                .build();
+                .setCustomConfigValidators(validators);
+        if (namespace.isPresent()) {
+            schedulerBuilder.setNamespace(namespace.get());
+        }
+        AbstractScheduler abstractScheduler = schedulerBuilder.build();
         FrameworkScheduler frameworkScheduler =
                 new FrameworkScheduler(
                         FrameworkConfig.fromRawServiceSpec(rawServiceSpec).getAllResourceRoles(),
                         mockSchedulerConfig,
                         persister,
                         new FrameworkStore(persister),
-                        serviceScheduler)
+                        abstractScheduler)
                 .setReadyToAcceptOffers()
                 .disableThreading();
 
         // Test 4: Can we render the per-task config templates without any missing values?
-        Collection<ServiceTestResult.TaskConfig> taskConfigs = getTaskConfigs(serviceSpec);
+        Collection<ServiceTestResult.TaskConfig> taskConfigs = getTaskConfigs(serviceSpec, mockSchedulerConfig);
 
         // Test 5: Run simulation, if any was provided
         ClusterState clusterState;
         if (oldClusterState == null) {
             // Initialize new cluster state
-            clusterState = ClusterState.create(serviceSpec, serviceScheduler);
+            clusterState = ClusterState.create(serviceSpec, abstractScheduler);
         } else {
             // Carry over prior cluster state
-            clusterState = ClusterState.withUpdatedConfig(oldClusterState, serviceSpec, serviceScheduler);
+            clusterState = ClusterState.withUpdatedConfig(oldClusterState, serviceSpec, abstractScheduler);
         }
         SchedulerDriver mockDriver = Mockito.mock(SchedulerDriver.class);
         for (SimulationTick tick : ticks) {
@@ -380,31 +401,45 @@ public class ServiceTestRunner {
             Collection<SimulationTick> allTicks, SimulationTick failedTick, Throwable originalError) {
         StringJoiner errorRows = new StringJoiner("\n");
         errorRows.add(String.format("Expectation failed: %s", failedTick.getDescription()));
-        errorRows.add("Simulation steps:");
-        int i = 0;
+        errorRows.add("Simulation ticks:");
+        // Display checkmarks for the ticks that passed, then an X mark for the tick that failed. Following that leave
+        // the others with an empty/blank status mark since they weren't run.
+        boolean seenFailedTick = false;
         for (SimulationTick tick : allTicks) {
-            String prefix = tick == failedTick ? ">>>FAIL<<< " : "";
-            if (tick instanceof Expect) {
-                prefix += "EXPECT";
-            } else if (tick instanceof Send) {
-                prefix += "SEND";
+            final String status;
+            if (tick == failedTick) {
+                seenFailedTick = true;
+                status = "✘";
+            } else if (seenFailedTick) {
+                status = " ";
             } else {
-                prefix += "???";
+                status = "✔";
             }
-            errorRows.add(String.format("%2s %s %s", ++i, prefix, tick.getDescription()));
+
+            final String type;
+            if (tick instanceof Expect) {
+                type = "EXPECT";
+            } else if (tick instanceof Send) {
+                type = "SEND  ";
+            } else {
+                type = "????  ";
+            }
+
+            errorRows.add(String.format("%s %s %s", status, type, tick.getDescription()));
         }
         // Print the original message last, because junit output will truncate based on its content:
         errorRows.add(String.format("Failure was: %s", originalError.getMessage()));
         return new AssertionError(errorRows.toString(), originalError);
     }
 
-    private Collection<ServiceTestResult.TaskConfig> getTaskConfigs(ServiceSpec serviceSpec) {
+    private Collection<ServiceTestResult.TaskConfig> getTaskConfigs(
+            ServiceSpec serviceSpec, SchedulerConfig schedulerConfig) {
         Collection<ServiceTestResult.TaskConfig> taskConfigs = new ArrayList<>();
         for (PodSpec podSpec : serviceSpec.getPods()) {
             PodInstance podInstance = new DefaultPodInstance(podSpec, 0);
             Map<String, String> customEnv = customPodEnvs.get(podSpec.getType());
             for (TaskSpec taskSpec : podSpec.getTasks()) {
-                Map<String, String> taskEnv = getTaskEnv(serviceSpec, podInstance, taskSpec);
+                Map<String, String> taskEnv = getTaskEnv(serviceSpec, podInstance, taskSpec, schedulerConfig);
                 if (customEnv != null) {
                     taskEnv.putAll(customEnv);
                 }
@@ -423,9 +458,14 @@ public class ServiceTestRunner {
         return taskConfigs;
     }
 
-    private static Map<String, String> getTaskEnv(ServiceSpec serviceSpec, PodInstance podInstance, TaskSpec taskSpec) {
+    private static Map<String, String> getTaskEnv(
+            ServiceSpec serviceSpec,
+            PodInstance podInstance,
+            TaskSpec taskSpec,
+            SchedulerConfig schedulerConfig) {
         Map<String, String> taskEnv = new HashMap<>();
-        taskEnv.putAll(PodInfoBuilder.getTaskEnvironment(serviceSpec.getName(), podInstance, taskSpec));
+        taskEnv.putAll(
+                PodInfoBuilder.getTaskEnvironment(serviceSpec.getName(), podInstance, taskSpec, schedulerConfig));
         taskEnv.putAll(DCOS_TASK_ENVVARS);
         // Inject envvars for any ports with envvar advertisement configured:
         for (ResourceSpec resourceSpec : taskSpec.getResourceSet().getResources()) {

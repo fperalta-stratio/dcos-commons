@@ -27,11 +27,10 @@ import java.util.*;
  */
 public class ConfigStore<T extends Configuration> implements ConfigTargetStore {
 
-    private static final Logger LOGGER = LoggingUtils.getLogger(ConfigStore.class);
-
     private static final String TARGET_ID_PATH_NAME = "ConfigTarget";
     private static final String CONFIGURATIONS_PATH_NAME = "Configurations";
 
+    private final Logger logger;
     private final Persister persister;
     private final String namespace;
     private final Map<UUID, T> cache = new HashMap<>();
@@ -58,6 +57,7 @@ public class ConfigStore<T extends Configuration> implements ConfigTargetStore {
      * @param namespace The namespace for data to be stored within, or an empty string for no namespacing
      */
     public ConfigStore(ConfigurationFactory<T> factory, Persister persister, String namespace) {
+        this.logger = LoggingUtils.getLogger(getClass(), namespace);
         this.factory = factory;
         this.persister = persister;
         this.namespace = namespace;
@@ -123,7 +123,7 @@ public class ConfigStore<T extends Configuration> implements ConfigTargetStore {
         }
 
         String path = getConfigPath(namespace, id);
-        LOGGER.info("Fetching configuration with ID={} from {}", id, path);
+        logger.info("Fetching configuration with ID={} from {}", id, path);
         byte[] data;
         try {
             data = persister.get(path);
@@ -156,7 +156,7 @@ public class ConfigStore<T extends Configuration> implements ConfigTargetStore {
         } catch (PersisterException e) {
             if (e.getReason() == Reason.NOT_FOUND) {
                 // Clearing a non-existent Configuration should not result in an exception.
-                LOGGER.warn("Requested configuration '{}' to be deleted does not exist at path '{}'", id, path);
+                logger.warn("Requested configuration '{}' to be deleted does not exist at path '{}'", id, path);
                 return;
             } else {
                 throw new ConfigStoreException(e, String.format(
@@ -188,7 +188,7 @@ public class ConfigStore<T extends Configuration> implements ConfigTargetStore {
         } catch (PersisterException e) {
             if (e.getReason() == Reason.NOT_FOUND) {
                 // Clearing a non-existent Configuration should not result in an exception.
-                LOGGER.warn("Configuration list at path '{}' does not exist: returning empty list",
+                logger.warn("Configuration list at path '{}' does not exist: returning empty list",
                         configurationsPath);
                 return new ArrayList<>();
             } else {

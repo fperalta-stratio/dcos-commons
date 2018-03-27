@@ -131,7 +131,7 @@ public class SchedulerBuilderTest {
                 serviceSpec, SchedulerConfigTestUtils.getTestSchedulerConfig(), new MemPersister());
         Optional<PlacementRule> placementRule = builder.getServiceSpec().getPods().get(0).getPlacementRule();
 
-        assert !placementRule.isPresent();
+        Assert.assertFalse(placementRule.isPresent());
     }
 
     @Test
@@ -172,5 +172,4 @@ public class SchedulerBuilderTest {
 
         return Arrays.asList(deployPlan, updatePlan);
     }
-
 }

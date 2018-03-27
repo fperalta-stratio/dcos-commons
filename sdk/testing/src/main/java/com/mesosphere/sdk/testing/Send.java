@@ -1,10 +1,9 @@
 package com.mesosphere.sdk.testing;
 
+import com.mesosphere.sdk.http.endpoints.PodResource;
 import org.apache.mesos.Protos;
 import org.apache.mesos.Scheduler;
 import org.apache.mesos.SchedulerDriver;
-
-import com.mesosphere.sdk.http.endpoints.PodResource;
 
 import java.util.Arrays;
 

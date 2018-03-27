@@ -7,6 +7,7 @@ import com.mesosphere.sdk.offer.MesosResourcePool;
 import com.mesosphere.sdk.offer.evaluate.security.TLSArtifact;
 import com.mesosphere.sdk.offer.evaluate.security.TLSArtifactPaths;
 import com.mesosphere.sdk.offer.evaluate.security.TLSArtifactsUpdater;
+import com.mesosphere.sdk.scheduler.SchedulerConfig;
 import com.mesosphere.sdk.scheduler.plan.DefaultPodInstance;
 import com.mesosphere.sdk.scheduler.plan.PodInstanceRequirement;
 import com.mesosphere.sdk.scheduler.plan.PodInstanceRequirementTestUtils;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.*;
 
 public class TLSEvaluationStageTest {
 
+    @Mock private SchedulerConfig mockSchedulerConfig;
     @Mock private TLSArtifactsUpdater mockTLSArtifactsUpdater;
 
     private TLSArtifactPaths tlsArtifactPaths;
@@ -40,6 +42,8 @@ public class TLSEvaluationStageTest {
     public void init() throws Exception {
         MockitoAnnotations.initMocks(this);
 
+        when(mockSchedulerConfig.getServiceTLD()).thenReturn(Constants.DNS_TLD);
+
         // echo -n "pod-type-0-test-task-name.service-name.autoip.dcos.thisdcos.directory" | sha1sum
         String sanHash = "8ffc618c478beb31a043d978652d7bc571fedfe2";
         tlsArtifactPaths = new TLSArtifactPaths(
@@ -47,7 +51,11 @@ public class TLSEvaluationStageTest {
                 TestConstants.POD_TYPE + "-" + TestConstants.TASK_INDEX + "-" + TestConstants.TASK_NAME,
                 sanHash);
         tlsEvaluationStage = new TLSEvaluationStage(
-                TestConstants.SERVICE_NAME, TestConstants.TASK_NAME, "test-namespace", mockTLSArtifactsUpdater);
+                TestConstants.SERVICE_NAME,
+                TestConstants.TASK_NAME,
+                "test-namespace",
+                mockTLSArtifactsUpdater,
+                mockSchedulerConfig);
     }
 
     private static PodInstanceRequirement getRequirementWithTransportEncryption(
@@ -111,7 +119,7 @@ public class TLSEvaluationStageTest {
         PodInfoBuilder podInfoBuilder = getPodInfoBuilderForTransportEncryption(transportEncryptionSpecs);
 
         EvaluationOutcome outcome = tlsEvaluationStage.evaluate(
-                new MesosResourcePool(TestConstants.SERVICE_NAME, offer, Optional.of(Constants.ANY_ROLE)),
+                new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)),
                 podInfoBuilder);
         Assert.assertTrue(outcome.isPassing());
 
@@ -139,7 +147,7 @@ public class TLSEvaluationStageTest {
         PodInfoBuilder podInfoBuilder = getPodInfoBuilderForTransportEncryption(transportEncryptionSpecs);
 
         EvaluationOutcome outcome = tlsEvaluationStage.evaluate(
-                new MesosResourcePool(TestConstants.SERVICE_NAME, offer, Optional.of(Constants.ANY_ROLE)),
+                new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)),
                 podInfoBuilder);
         Assert.assertTrue(outcome.isPassing());
 
@@ -167,7 +175,7 @@ public class TLSEvaluationStageTest {
         PodInfoBuilder podInfoBuilder = getPodInfoBuilderForTransportEncryption(transportEncryptionSpecs);
 
         EvaluationOutcome outcome = tlsEvaluationStage.evaluate(
-                new MesosResourcePool(TestConstants.SERVICE_NAME, offer, Optional.of(Constants.ANY_ROLE)),
+                new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)),
                 podInfoBuilder);
         Assert.assertTrue(outcome.isPassing());
 
@@ -198,7 +206,7 @@ public class TLSEvaluationStageTest {
         PodInfoBuilder podInfoBuilder = getPodInfoBuilderForTransportEncryption(transportEncryptionSpecs);
 
         EvaluationOutcome outcome = tlsEvaluationStage.evaluate(
-                new MesosResourcePool(TestConstants.SERVICE_NAME, offer, Optional.of(Constants.ANY_ROLE)),
+                new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)),
                 podInfoBuilder);
         Assert.assertFalse(outcome.isPassing());
     }

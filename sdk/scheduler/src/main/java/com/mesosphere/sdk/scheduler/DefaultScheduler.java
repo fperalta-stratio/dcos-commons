@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 public class DefaultScheduler extends AbstractScheduler {
 
     private final Logger logger;
+    private final Optional<String> namespace;
     private final SchedulerConfig schedulerConfig;
     private final FrameworkStore frameworkStore;
     private final ConfigStore<ServiceSpec> configStore;
@@ -77,17 +78,20 @@ public class DefaultScheduler extends AbstractScheduler {
     protected DefaultScheduler(
             ServiceSpec serviceSpec,
             SchedulerConfig schedulerConfig,
+            Optional<String> resourceNamespace,
             Collection<Object> customResources,
             PlanCoordinator planCoordinator,
             Optional<PlanCustomizer> planCustomizer,
+            Optional<String> namespace,
             FrameworkStore frameworkStore,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
             ArtifactQueries.TemplateUrlFactory templateUrlFactory,
             Map<String, EndpointProducer> customEndpointProducers) throws ConfigStoreException {
-        super(serviceSpec, stateStore, planCustomizer);
+        super(serviceSpec, stateStore, planCustomizer, namespace);
+        this.logger = LoggingUtils.getLogger(getClass(), namespace);
+        this.namespace = namespace;
         this.schedulerConfig = schedulerConfig;
-        this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
         this.frameworkStore = frameworkStore;
         this.configStore = configStore;
         this.planCoordinator = planCoordinator;
@@ -124,6 +128,7 @@ public class DefaultScheduler extends AbstractScheduler {
                         configStore.getTargetConfig(),
                         templateUrlFactory,
                         schedulerConfig,
+                        resourceNamespace,
                         Capabilities.getInstance().supportsDefaultExecutor()),
                 stateStore);
     }
@@ -134,7 +139,7 @@ public class DefaultScheduler extends AbstractScheduler {
         resources.addAll(customResources);
         resources.add(new ArtifactResource(configStore));
         resources.add(new ConfigResource<>(configStore));
-        EndpointsResource endpointsResource = new EndpointsResource(stateStore, serviceSpec.getName());
+        EndpointsResource endpointsResource = new EndpointsResource(stateStore, serviceSpec.getName(), schedulerConfig);
         for (Map.Entry<String, EndpointProducer> entry : customEndpointProducers.entrySet()) {
             endpointsResource.setCustomEndpoint(entry.getKey(), entry.getValue());
         }
@@ -388,6 +393,7 @@ public class DefaultScheduler extends AbstractScheduler {
                 this.stateStore,
                 this.configStore,
                 this.schedulerConfig,
-                this.planCustomizer);
+                this.planCustomizer,
+                this.namespace);
     }
 }

@@ -37,14 +37,12 @@ public abstract class AbstractScheduler implements MesosEventClient {
     private ReviveManager reviveManager;
     private Reconciler reconciler;
 
-    /**
-     * Creates a new AbstractScheduler given a {@link StateStore}.
-     */
     protected AbstractScheduler(
             ServiceSpec serviceSpec,
             StateStore stateStore,
-            Optional<PlanCustomizer> planCustomizer) {
-        this.logger = LoggingUtils.getLogger(AbstractScheduler.class, serviceSpec.getName());
+            Optional<PlanCustomizer> planCustomizer,
+            Optional<String> namespace) {
+        this.logger = LoggingUtils.getLogger(AbstractScheduler.class, namespace);
         this.serviceSpec = serviceSpec;
         this.stateStore = stateStore;
         this.planCustomizer = planCustomizer;

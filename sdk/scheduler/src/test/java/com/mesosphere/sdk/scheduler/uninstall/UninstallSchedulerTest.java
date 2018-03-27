@@ -221,6 +221,7 @@ public class UninstallSchedulerTest extends DefaultCapabilitiesTestSuite {
                 mockConfigStore,
                 SchedulerConfigTestUtils.getTestSchedulerConfig(),
                 Optional.empty(),
+                Optional.empty(),
                 Optional.of(mockSecretsClient));
         // Starts with a near-empty plan with only the deregistered call incomplete
         PlanCoordinator planCoordinator = uninstallScheduler.getPlanCoordinator();
@@ -299,6 +300,7 @@ public class UninstallSchedulerTest extends DefaultCapabilitiesTestSuite {
                 mockConfigStore,
                 SchedulerConfigTestUtils.getTestSchedulerConfig(),
                 Optional.of(getReversingPlanCustomizer()),
+                Optional.empty(),
                 Optional.of(mockSecretsClient));
         uninstallScheduler.start();
 
@@ -335,6 +337,7 @@ public class UninstallSchedulerTest extends DefaultCapabilitiesTestSuite {
                 mockConfigStore,
                 SchedulerConfigTestUtils.getTestSchedulerConfig(),
                 Optional.of(mockPlanCustomizer),
+                Optional.empty(),
                 Optional.of(mockSecretsClient));
         uninstallScheduler
                 .start()

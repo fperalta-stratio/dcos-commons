@@ -304,7 +304,6 @@ public class DefaultServiceSpec implements ServiceSpec {
     public static ConfigurationFactory<ServiceSpec> getConfigurationFactory(
             ServiceSpec serviceSpec,
             Collection<Class<?>> additionalSubtypesToRegister) {
-
         ConfigurationFactory<ServiceSpec> factory = new ConfigFactory(
                 additionalSubtypesToRegister,
                 ConfigFactory.getReferenceTerminalGoalState(serviceSpec));
@@ -401,6 +400,9 @@ public class DefaultServiceSpec implements ServiceSpec {
         private final ObjectMapper objectMapper;
         private final GoalState referenceTerminalGoalState;
 
+        /**
+         * @see DefaultServiceSpec#getConfigurationFactory(ServiceSpec, Collection)
+         */
         private ConfigFactory(Collection<Class<?>> additionalSubtypes, GoalState goalState) {
             objectMapper = SerializationUtils.registerDefaultModules(new ObjectMapper());
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);

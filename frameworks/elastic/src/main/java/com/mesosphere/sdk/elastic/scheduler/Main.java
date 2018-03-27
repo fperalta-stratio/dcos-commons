@@ -1,5 +1,6 @@
 package com.mesosphere.sdk.elastic.scheduler;
 
+import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.scheduler.*;
 import com.mesosphere.sdk.specification.DefaultServiceSpec;
 import com.mesosphere.sdk.specification.yaml.RawServiceSpec;
@@ -19,6 +20,9 @@ public class Main {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expected one file argument, got: " + Arrays.toString(args));
         }
+
+        Capabilities.getInstance().allowRegionAwareness();
+
         SchedulerRunner
                 .fromSchedulerBuilder(createSchedulerBuilder(new File(args[0])))
                 .run();
@@ -26,6 +30,7 @@ public class Main {
 
     private static SchedulerBuilder createSchedulerBuilder(File yamlSpecFile) throws Exception {
         RawServiceSpec rawServiceSpec = RawServiceSpec.newBuilder(yamlSpecFile).build();
+
         SchedulerConfig schedulerConfig = SchedulerConfig.fromEnv();
 
         // Modify pod environments in two ways:
@@ -45,6 +50,7 @@ public class Main {
 
         return DefaultScheduler.newBuilder(serviceSpecGenerator.build(), schedulerConfig)
                 .setCustomConfigValidators(Arrays.asList(new ElasticZoneValidator()))
-                .setPlansFrom(rawServiceSpec);
+                .setPlansFrom(rawServiceSpec)
+                .withSingleRegionConstraint();
     }
 }

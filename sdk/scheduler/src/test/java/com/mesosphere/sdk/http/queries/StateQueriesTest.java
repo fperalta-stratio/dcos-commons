@@ -35,14 +35,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class StateQueriesTest {
+
+    private static final String FILE_NAME = "test-file";
+    private static final String FILE_CONTENT = "test data";
+
     @Mock private FrameworkStore mockFrameworkStore;
     @Mock private StateStore mockStateStore;
     @Mock private Persister mockPersister;
     @Mock private PersisterCache mockPersisterCache;
-    private static final String FILE_NAME = "test-file";
-    private static final String FILE_CONTENT = "test data";
-
-    @Mock FormDataContentDisposition formDataContentDisposition;
+    @Mock private FormDataContentDisposition formDataContentDisposition;
 
     @Before
     public void beforeEach() {

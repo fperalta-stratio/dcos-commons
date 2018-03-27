@@ -11,12 +11,10 @@ import java.nio.charset.StandardCharsets;
 import org.slf4j.Logger;
 
 /**
- * Used by StateStore and ConfigStore implementations to retrieve and validate the Schema Version against whatever
- * version is supported by those respective stores. The Schema Version is a single integer common across all persisted
- * stores.
+ * Used to retrieve and validate the Schema Version against whatever version is supported by the scheduler.
  *
- * Both of these services share the same schema version, which is a number that monotonically increases. Each
- * implementation is responsible for handling its migration between schema versions.
+ * The schema version is a number that may change over time as incompatible changes are made to persistent storage.
+ * Storage implementations are responsible for handling its migration between schema versions.
  */
 public class SchemaVersionStore {
 
@@ -25,7 +23,7 @@ public class SchemaVersionStore {
      */
     private static final Charset CHARSET = StandardCharsets.UTF_8;
 
-    private static final Logger LOGGER = LoggingUtils.getLogger(SchemaVersionStore.class);
+    private static final Logger logger = LoggingUtils.getLogger(SchemaVersionStore.class);
 
     /**
      * This name/path must remain the same forever. It's the basis of all other migrations.
@@ -46,11 +44,8 @@ public class SchemaVersionStore {
     }
 
     /**
-     * Retrieves the current schema version. This should be called by the StateStore or ConfigStore
-     * implementation before reading any other data. If the returned value is unsupported, the
-     * StateStore or ConfigStore is responsible for migrating the data to a version that's
-     * compatible. Note that this may auto-populate the underlying schema version if the value isn't
-     * currently present.
+     * Checks if the current stored version matches the {@code expectedVersion}. If no schema version is present, then
+     * the {@code expectedVersion} is written to the store automatically for future checks.
      *
      * @param expectedVersion the expected schema version to be stored if no version is currently set or to be checked
      *                        for equality if a version is currently set
@@ -59,14 +54,14 @@ public class SchemaVersionStore {
      */
     public void check(int expectedVersion) throws StateStoreException {
         try {
-            LOGGER.debug("Fetching schema version from '{}'", SCHEMA_VERSION_NAME);
+            logger.debug("Fetching schema version from '{}'", SCHEMA_VERSION_NAME);
             byte[] bytes = persister.get(SCHEMA_VERSION_NAME);
             if (bytes.length == 0) {
                 throw new StateStoreException(Reason.SERIALIZATION_ERROR, String.format(
                         "Invalid data when fetching schema version in '%s'", SCHEMA_VERSION_NAME));
             }
             String rawString = new String(bytes, CHARSET);
-            LOGGER.debug("Schema version retrieved from '{}': {}", SCHEMA_VERSION_NAME, rawString);
+            logger.debug("Schema version retrieved from '{}': {}", SCHEMA_VERSION_NAME, rawString);
             int currentVersion;
             try {
                 currentVersion = Integer.parseInt(rawString);
@@ -75,7 +70,7 @@ public class SchemaVersionStore {
                         "Unable to parse fetched schema version: '%s' from path: %s",
                         rawString, SCHEMA_VERSION_NAME), e);
             }
-            if (!SchemaVersionStore.isSupported(currentVersion, expectedVersion, expectedVersion)) {
+            if (currentVersion != expectedVersion) {
                 throw new IllegalStateException(String.format(
                         "Storage schema version %d is not supported by this software (expected: %d)",
                         currentVersion, expectedVersion));
@@ -83,7 +78,7 @@ public class SchemaVersionStore {
         } catch (PersisterException e) {
             if (e.getReason() == Reason.NOT_FOUND) {
                 // The schema version doesn't exist yet. Initialize to the current version.
-                LOGGER.debug("Schema version not found at path: {}. New service install? " +
+                logger.debug("Schema version not found at path: {}. New service install? " +
                         "Initializing path to schema version: {}.",
                         SCHEMA_VERSION_NAME, expectedVersion);
                 store(expectedVersion);
@@ -95,8 +90,8 @@ public class SchemaVersionStore {
     }
 
     /**
-     * Updates the schema version to the provided value. This should only be called as part of a
-     * migration to a new schema.
+     * Sets the schema version to the provided value. In practice this should only be called if no existing schema
+     * version is present, or if a migration to a new schema version just finished.
      *
      * @param version the new schema version to store
      * @throws StateStoreException if storing the schema version fails
@@ -105,21 +100,12 @@ public class SchemaVersionStore {
     void store(int version) throws StateStoreException {
         try {
             String versionStr = String.valueOf(version);
-            LOGGER.debug("Storing schema version: '{}' into path: {}",
+            logger.debug("Storing schema version: '{}' into path: {}",
                     versionStr, SCHEMA_VERSION_NAME);
             persister.set(SCHEMA_VERSION_NAME, versionStr.getBytes(CHARSET));
         } catch (Exception e) {
             throw new StateStoreException(Reason.STORAGE_ERROR, String.format(
                     "Storage error when storing schema version %d", version), e);
         }
-    }
-
-    /**
-     * Convenience method for checking whether the current schema version falls within a supported
-     * range. If this returns false, the implementer is expected to perform a migration to the
-     * current version, or to raise an exception.
-     */
-    public static boolean isSupported(int current, int min, int max) {
-        return current >= min && current <= max;
     }
 }

@@ -39,30 +39,30 @@ public class CommonIdUtils {
      * value will omit any slashes which may have been present in the original service name. Service names are only
      * embedded in task IDs as of SDK 0.50.
      * <p>
-     * For example: "pathtoservice__instance-0__aoeu5678" => "pathtoservice" (NOT "/path/to/service"),
+     * For example: "path.to.service__instance-0__aoeu5678" => "path.to.service" (NOT "/path/to/service"),
      * or "instance-0__aoeu5678" => Empty
      *
      * @see #toTaskId(String)
      */
     public static Optional<String> toSanitizedServiceName(Protos.TaskID taskId) throws TaskException {
-        return extractFirstNameFromId(taskId.getValue());
+        return extractServiceNameFromId(taskId.getValue());
     }
 
     /**
      * Converts the unique {@link TaskID} into a Framework defined task name.
      * <p>
-     * For example: "pathtoservice__instance-0__aoeu5678" => "instance-0"
+     * For example: "path.to.service__instance-0__aoeu5678" => "instance-0"
      *
      * @see #toTaskId(String)
      */
     public static String toTaskName(Protos.TaskID taskId) throws TaskException {
-        return extractLastNameFromId(taskId.getValue());
+        return extractTaskNameFromId(taskId.getValue());
     }
 
     /**
      * Converts the Framework defined task name into a unique {@link TaskID}.
      * <p>
-     * For example: "/path/to/service" + "instance-0" => "pathtoservice__instance-0__aoeu5678"
+     * For example: "/path/to/service" + "instance-0" => "path.to.service__instance-0__aoeu5678"
      *
      * @throws IllegalArgumentException if the provided {@code serviceName} or {@code taskName} contain "__"
      * @see #toTaskName(org.apache.mesos.Protos.TaskID)
@@ -77,30 +77,30 @@ public class CommonIdUtils {
      * value will omit any slashes which may have been present in the original service name. Service names are only
      * embedded in executor IDs as of SDK 0.50.
      * <p>
-     * For example: "pathtoservice__instance-0__aoeu5678" => "pathtoservice" (NOT "/path/to/service"),
+     * For example: "path.to.service__instance-0__aoeu5678" => "path.to.service" (NOT "/path/to/service"),
      * or "instance-0__aoeu5678" => Empty
      *
      * @see #toExecutorId(String)
      */
     public static Optional<String> toSanitizedServiceName(Protos.ExecutorID executorId) throws TaskException {
-        return extractFirstNameFromId(executorId.getValue());
+        return extractServiceNameFromId(executorId.getValue());
     }
 
     /**
      * Converts the unique {@link Protos.ExecutorID} into a Framework defined executor name.
      * <p>
-     * For example: "__path__to__service__instance-0__aoeu5678" => "instance-0"
+     * For example: "path.to.service__instance-0__aoeu5678" => "instance-0"
      *
      * @see #toExecutorId(String)
      */
     public static String toExecutorName(Protos.ExecutorID executorId) throws TaskException {
-        return extractLastNameFromId(executorId.getValue());
+        return extractTaskNameFromId(executorId.getValue());
     }
 
     /**
      * Converts the Framework defined Executor name into a unique {@link Protos.ExecutorID}.
      * <p>
-     * For example: "/path/to/service" + "instance-0" => "__path__to__service__instance-0__aoeu5678"
+     * For example: "/path/to/service" + "instance-0" => "path.to.service__instance-0__aoeu5678"
      *
      * @throws IllegalArgumentException if the provided {@code serviceName} or {@code taskName} contain "__"
      * @see #toExecutorName(org.apache.mesos.Protos.ExecutorID)
@@ -142,8 +142,8 @@ public class CommonIdUtils {
      *
      * @throws IllegalArgumentException if the provided {@code name} contains the "__" delimiter
      * @param itemName the task name or executor name
-     * @see #extractFirstNameFromId(String)
-     * @see #extractLastNameFromId(String)
+     * @see #extractServiceNameFromId(String)
+     * @see #extractTaskNameFromId(String)
      */
     private static String toIdString(String serviceName, String itemName) throws IllegalArgumentException {
         if (serviceName.contains(NAME_ID_DELIM)) {
@@ -165,25 +165,8 @@ public class CommonIdUtils {
      * @throws TaskException if the provided {@code id} is malformed
      * @see #generateIdString(String)
      */
-    private static Optional<String> extractFirstNameFromId(String id) throws TaskException {
-        // Support both of the following (note double underscores as delimiter):
-        // - "task_name__uuid"
-        // - "other_info__task_name__uuid"
-        int lastIndex = id.lastIndexOf(NAME_ID_DELIM);
-        if (lastIndex == -1) {
-            throw new TaskException(String.format(
-                    "ID '%s' is malformed. Expected '%s' to extract name from ID. "
-                    + "IDs should be generated with CommonIdUtils.",
-                    id, NAME_ID_DELIM));
-        }
-        int secondLastIndex = id.lastIndexOf(NAME_ID_DELIM, lastIndex - NAME_ID_DELIM.length());
-        if (secondLastIndex == -1) {
-            // Only one set of double underscores: "task_name__uuid"
-            return Optional.empty();
-        } else {
-            // Two sets of double underscores: "service_name__task_name__uuid"
-            return Optional.of(id.substring(0, secondLastIndex));
-        }
+    private static Optional<String> extractServiceNameFromId(String id) throws TaskException {
+        return Optional.ofNullable(extract(id, true));
     }
 
     /**
@@ -192,24 +175,57 @@ public class CommonIdUtils {
      * @throws TaskException if the provided {@code id} is malformed
      * @see #generateIdString(String)
      */
-    private static String extractLastNameFromId(String id) throws TaskException {
+    private static String extractTaskNameFromId(String id) throws TaskException {
+        return extract(id, false);
+    }
+
+    /**
+     * Extracts either the service name or task name from the provided {@code id} string.
+     *
+     * @param id the string to extract from
+     * @param serviceName whether to return a service name ({@code true}) or task name ({@code false})
+     * @return the service name or task name. if {@code serviceName} is {@code true} then this may return {@code null}
+     * @throws TaskException if the {@code id} is malformed
+     */
+    private static String extract(String id, boolean serviceName) throws TaskException {
         // Support both of the following (note double underscores as delimiter):
-        // - "task_name__uuid"
-        // - "other_info__task_name__uuid"
-        int lastIndex = id.lastIndexOf(NAME_ID_DELIM);
-        if (lastIndex == -1) {
+        // - "task-name__uuid"
+        // - "service-name__task-name__uuid"
+        int lastDelimIndex = id.lastIndexOf(NAME_ID_DELIM);
+        if (lastDelimIndex == -1) {
             throw new TaskException(String.format(
                     "ID '%s' is malformed. Expected '%s' to extract name from ID. "
                     + "IDs should be generated with CommonIdUtils.",
                     id, NAME_ID_DELIM));
         }
-        int secondLastIndex = id.lastIndexOf(NAME_ID_DELIM, lastIndex - NAME_ID_DELIM.length());
-        if (secondLastIndex == -1) {
-            // Only one set of double underscores: "task_name__uuid"
-            return id.substring(0, lastIndex);
+        if (!serviceName) {
+            // Return "task-name" preceding "uuid"
+            return seekBackFrom(id, lastDelimIndex);
+        }
+
+        // Return "service-name" preceding "task-name", or null if it's a short id
+        int secondLastDelimIndex = id.lastIndexOf(NAME_ID_DELIM, lastDelimIndex - NAME_ID_DELIM.length());
+        if (secondLastDelimIndex == -1) {
+            // Only one set of double underscores: "task-name__uuid"
+            return null;
+        }
+        // Two or more sets of double underscores: "service-name__task-name__uuid" or
+        // "other-info__service-name__task-name__uuid" (for future expansion)
+        return seekBackFrom(id, secondLastDelimIndex);
+    }
+
+    /**
+     * Seeks back from {@code endIndex} to find a prior {@code NAME_ID_DELIM} and returns that range, or returns the
+     * whole string until {@code endIndex} if no prior {@code NAME_ID_DELIM} is found.
+     */
+    private static String seekBackFrom(String id, int endIndex) {
+        int beginIndex = id.lastIndexOf(NAME_ID_DELIM, endIndex - NAME_ID_DELIM.length());
+        if (beginIndex == -1) {
+            // No earlier delim found, return everything before endIndex
+            return id.substring(0, endIndex);
         } else {
-            // Two sets of double underscores: "other_name__task_name__uuid"
-            return id.substring(secondLastIndex + NAME_ID_DELIM.length(), lastIndex);
+            // Earlier delim found, return range from that delim until endIndex
+            return id.substring(beginIndex + NAME_ID_DELIM.length(), endIndex);
         }
     }
 }

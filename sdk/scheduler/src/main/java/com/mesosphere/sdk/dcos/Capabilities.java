@@ -17,6 +17,7 @@ public class Capabilities {
     private static Capabilities capabilities;
 
     private final DcosVersion dcosVersion;
+    private boolean serviceSupportsRegionAwareness;
 
     public static Capabilities getInstance() {
         synchronized (lock) {
@@ -43,6 +44,7 @@ public class Capabilities {
     @VisibleForTesting
     public Capabilities(DcosVersion dcosVersion) {
         this.dcosVersion = dcosVersion;
+        this.serviceSupportsRegionAwareness = false;
     }
 
     public DcosVersion getDcosVersion() {
@@ -100,9 +102,17 @@ public class Capabilities {
         return hasOrExceedsVersion(1, 11);
     }
 
+    /**
+     * Enables region awareness for this service. Note that this is only supported on DC/OS 1.11+ clusters.
+     */
+    public void allowRegionAwareness() {
+        this.serviceSupportsRegionAwareness = true;
+    }
+
     public boolean supportsRegionAwareness(SchedulerConfig schedulerConfig) {
         // This feature is in BETA for 1.11, so requires explicit opt-in by end-users.
-        return schedulerConfig.isRegionAwarenessEnabled() && hasOrExceedsVersion(1, 11);
+        return (serviceSupportsRegionAwareness || schedulerConfig.isRegionAwarenessEnabled())
+                && hasOrExceedsVersion(1, 11);
     }
 
     public boolean supportsDomains() {

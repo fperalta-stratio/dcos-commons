@@ -75,10 +75,7 @@ public class DefaultPlanCoordinatorTest extends DefaultCapabilitiesTestSuite {
 
     private DefaultServiceSpec serviceSpecification;
     private DefaultServiceSpec serviceSpecificationB;
-    private FrameworkStore frameworkStore;
-    private StateStore stateStore;
     private PlanScheduler planScheduler;
-    private StepFactory stepFactory;
     private PhaseFactory phaseFactory;
 
     @Before
@@ -94,11 +91,11 @@ public class DefaultPlanCoordinatorTest extends DefaultCapabilitiesTestSuite {
                 .build();
         Persister persister = new MemPersister();
 
-        frameworkStore = new FrameworkStore(persister);
+        FrameworkStore frameworkStore = new FrameworkStore(persister);
         frameworkStore.storeFrameworkId(TestConstants.FRAMEWORK_ID);
-        stateStore = new StateStore(persister);
+        StateStore stateStore = new StateStore(persister);
 
-        stepFactory = new DefaultStepFactory(mock(ConfigStore.class), stateStore);
+        StepFactory stepFactory = new DefaultStepFactory(mock(ConfigStore.class), stateStore);
         phaseFactory = new DefaultPhaseFactory(stepFactory);
 
         planScheduler = new PlanScheduler(
@@ -111,6 +108,7 @@ public class DefaultPlanCoordinatorTest extends DefaultCapabilitiesTestSuite {
                         UUID.randomUUID(),
                         ArtifactResource.getUrlFactory(TestConstants.SERVICE_NAME),
                         SchedulerConfigTestUtils.getTestSchedulerConfig(),
+                        Optional.empty(),
                         true),
                 stateStore);
         serviceSpecificationB = DefaultServiceSpec.newBuilder()

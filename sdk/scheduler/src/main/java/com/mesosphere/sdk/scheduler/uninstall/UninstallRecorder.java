@@ -14,14 +14,12 @@ import java.util.stream.Collectors;
  * service by marking them with a tombstone id, then notifying the uninstall plan of the changes.
  */
 public class UninstallRecorder {
-    private final Logger logger;
-    private final String serviceName;
+
+    private final Logger logger = LoggingUtils.getLogger(getClass());
     private final StateStore stateStore;
     private final Collection<ResourceCleanupStep> resourceSteps;
 
     public UninstallRecorder(String serviceName, StateStore stateStore, Collection<ResourceCleanupStep> resourceSteps) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
-        this.serviceName = serviceName;
         this.stateStore = stateStore;
         this.resourceSteps = resourceSteps;
     }
@@ -68,8 +66,7 @@ public class UninstallRecorder {
         // - Rebuild each task object at most once.
         // - Avoid modifying tasks which aren't affected.
 
-        Collection<Protos.TaskInfo> updatedTasks =
-                withRemovedResources(serviceName, stateStore.fetchTasks(), allResourceIds);
+        Collection<Protos.TaskInfo> updatedTasks = withRemovedResources(stateStore.fetchTasks(), allResourceIds);
 
         logger.info("{} resourceId{}{} to tombstone were found in {} task{}{}",
                 allResourceIds.size(),
@@ -93,13 +90,13 @@ public class UninstallRecorder {
      * {@code resourceIds}.
      */
     private static Collection<Protos.TaskInfo> withRemovedResources(
-            String serviceName, Collection<Protos.TaskInfo> taskInfos, Set<String> resourceIdsToRemove) {
+            Collection<Protos.TaskInfo> taskInfos, Set<String> resourceIdsToRemove) {
         Collection<Protos.TaskInfo> updatedTasks = new ArrayList<>();
         for (Protos.TaskInfo taskInfo : taskInfos) {
             Collection<Protos.Resource> updatedTaskResources =
-                    filterResources(serviceName, taskInfo.getResourcesList(), resourceIdsToRemove);
+                    filterResources(taskInfo.getResourcesList(), resourceIdsToRemove);
             Collection<Protos.Resource> updatedExecutorResources =
-                    filterResources(serviceName, taskInfo.getExecutor().getResourcesList(), resourceIdsToRemove);
+                    filterResources(taskInfo.getExecutor().getResourcesList(), resourceIdsToRemove);
             if (updatedTaskResources == null && updatedExecutorResources == null) {
                 // This task doesn't have any of the targeted resource ids. Ignore it and move on to the next task.
                 continue;
@@ -127,11 +124,11 @@ public class UninstallRecorder {
     }
 
     /**
-     * Returns the provided {@code resources} with any holding matching {@code resourceIdsToUpdate} updated to contain
-     * a tombstone. Returns {@code null} if no changes were made.
+     * Returns the provided {@code resources} with any holding matching {@code resourceIdsToRemove} omitted. Returns
+     * {@code null} if no changes were made.
      */
     private static Collection<Protos.Resource> filterResources(
-            String serviceName, Collection<Protos.Resource> resources, Set<String> resourceIdsToRemove) {
+            Collection<Protos.Resource> resources, Set<String> resourceIdsToRemove) {
         if (resources.isEmpty()) {
             return null;
         }

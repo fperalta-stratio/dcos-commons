@@ -1,5 +1,6 @@
 package com.mesosphere.sdk.scheduler.uninstall;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.sdk.config.SerializationUtils;
 import com.mesosphere.sdk.dcos.clients.SecretsClient;
 import com.mesosphere.sdk.http.endpoints.DeprecatedPlanResource;
@@ -45,19 +46,22 @@ public class UninstallScheduler extends AbstractScheduler {
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
             SchedulerConfig schedulerConfig,
-            Optional<PlanCustomizer> planCustomizer) {
-        this(serviceSpec, stateStore, configStore, schedulerConfig, planCustomizer, Optional.empty());
+            Optional<PlanCustomizer> planCustomizer,
+            Optional<String> namespace) {
+        this(serviceSpec, stateStore, configStore, schedulerConfig, planCustomizer, namespace, Optional.empty());
     }
 
+    @VisibleForTesting
     protected UninstallScheduler(
             ServiceSpec serviceSpec,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
             SchedulerConfig schedulerConfig,
             Optional<PlanCustomizer> planCustomizer,
+            Optional<String> namespace,
             Optional<SecretsClient> customSecretsClientForTests) {
-        super(serviceSpec, stateStore, planCustomizer);
-        this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
+        super(serviceSpec, stateStore, planCustomizer, namespace);
+        this.logger = LoggingUtils.getLogger(getClass(), namespace);
         this.configStore = configStore;
 
         if (!StateStoreUtils.isUninstalling(stateStore)) {

@@ -92,7 +92,7 @@ public class AbstractSchedulerTest {
     private class TestScheduler extends AbstractScheduler {
 
         protected TestScheduler(StateStore stateStore) {
-            super(mockServiceSpec, stateStore, Optional.empty());
+            super(mockServiceSpec, stateStore, Optional.empty(), Optional.empty());
             when(mockPlanCoordinator.getPlanManagers()).thenReturn(Collections.emptyList());
             when(mockPlanCoordinator.getCandidates()).thenReturn(Collections.emptyList());
         }

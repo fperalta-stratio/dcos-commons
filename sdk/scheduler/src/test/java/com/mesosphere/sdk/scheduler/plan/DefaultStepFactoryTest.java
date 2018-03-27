@@ -122,7 +122,6 @@ public class DefaultStepFactoryTest {
 
         assertThat(step.isComplete(), is(true));
         assertThat(step.isPending(), is(false));
-
     }
 
     @Test

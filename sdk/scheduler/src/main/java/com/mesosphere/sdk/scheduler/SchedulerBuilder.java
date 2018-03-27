@@ -56,10 +56,9 @@ import java.util.stream.Collectors;
 public class SchedulerBuilder {
 
     private final Logger logger;
-
+    private ServiceSpec serviceSpec;
     private final SchedulerConfig schedulerConfig;
     private final Persister persister;
-    private ServiceSpec serviceSpec;
 
     // When these collections are empty, we don't do anything extra:
     private final Map<String, RawPlan> yamlPlans = new HashMap<>();
@@ -68,8 +67,8 @@ public class SchedulerBuilder {
     private Collection<Object> customResources = new ArrayList<>();
     private RecoveryPlanOverriderFactory recoveryPlanOverriderFactory;
     private PlanCustomizer planCustomizer;
+    private Optional<String> namespace = Optional.empty();
     private Optional<ArtifactQueries.TemplateUrlFactory> templateUrlFactory = Optional.empty();
-    private Optional<String> storageNamespace = Optional.empty();
 
     SchedulerBuilder(ServiceSpec serviceSpec, SchedulerConfig schedulerConfig) throws PersisterException {
         this(
@@ -174,6 +173,9 @@ public class SchedulerBuilder {
         return this;
     }
 
+    /**
+     * Configures the resulting scheduler instance with a region constraint.
+     */
     public SchedulerBuilder withSingleRegionConstraint() {
          if (!Capabilities.getInstance().supportsDomains()) {
              // If this is an older version of DC/OS that doesn't support multi-region deployments, this is a noop.
@@ -214,22 +216,21 @@ public class SchedulerBuilder {
     }
 
     /**
+     * Assigns a custom namespace for this service. This is only relevant when a single framework is running multiple
+     * services, where different services need to be differentiated from each other. The namespace is used for both
+     * storage in ZK ({@link StateStore}/{@link ConfigStore}), as well as in resource labels.
+     */
+    public SchedulerBuilder setNamespace(String namespace) {
+        this.namespace = Optional.of(namespace);
+        return this;
+    }
+
+    /**
      * Assigns a custom factory for generating config template URLs. Otherwise a default suitable for use with
      * {@link ArtifactResource} is used.
      */
     public SchedulerBuilder setTemplateUrlFactory(ArtifactQueries.TemplateUrlFactory templateUrlFactory) {
         this.templateUrlFactory = Optional.of(templateUrlFactory);
-        return this;
-    }
-
-    /**
-     * Assigns a custom framework configuration for this service. This is only relevant when a single framework is
-     * running multiple services. By default the framework configuration is derived from the {@link ServiceSpec}.
-     *
-     * @param storageNamespace storage namespace to use for this service
-     */
-    public SchedulerBuilder setStorageNamespace(String storageNamespace) {
-        this.storageNamespace = Optional.of(storageNamespace);
         return this;
     }
 
@@ -246,10 +247,10 @@ public class SchedulerBuilder {
 
         // When multi-service is enabled, state/configs are stored within a namespace matching the service name.
         // Otherwise use an empty namespace, which indicates single-service mode.
-        String storageNamespaceStr = storageNamespace.orElse("");
-        StateStore stateStore = new StateStore(persister, storageNamespaceStr);
+        String namespaceStr = namespace.orElse("");
+        StateStore stateStore = new StateStore(persister, namespaceStr);
         ConfigStore<ServiceSpec> configStore = new ConfigStore<>(
-                DefaultServiceSpec.getConfigurationFactory(serviceSpec), persister, storageNamespaceStr);
+                DefaultServiceSpec.getConfigurationFactory(serviceSpec), persister, namespaceStr);
 
         if (schedulerConfig.isUninstallEnabled()) {
             // FRAMEWORK UNINSTALL: The scheduler and all its service(s) are being uninstalled. Launch this service in
@@ -259,12 +260,13 @@ public class SchedulerBuilder {
                     stateStore,
                     configStore,
                     schedulerConfig,
-                    Optional.ofNullable(planCustomizer));
+                    Optional.ofNullable(planCustomizer),
+                    namespace);
         }
 
         if (StateStoreUtils.isUninstalling(stateStore)) {
             // SERVICE UNINSTALL: The service has an uninstall bit set in its (potentially namespaced) state store.
-            if (storageNamespace.isPresent()) {
+            if (namespace.isPresent()) {
                 // This namespaced service is partway through being removed from the parent multi-service scheduler.
                 // Launch the service in uninstall mode so that it can continue with whatever may be left.
                 return new UninstallScheduler(
@@ -272,7 +274,8 @@ public class SchedulerBuilder {
                         stateStore,
                         configStore,
                         schedulerConfig,
-                        Optional.ofNullable(planCustomizer));
+                        Optional.ofNullable(planCustomizer),
+                        namespace);
             } else {
                 // This is an illegal state for a single-service scheduler. SchedulerConfig's uninstall bit should have
                 // also been enabled. If we got here, it means that the user likely tampered with the scheduler env
@@ -382,9 +385,11 @@ public class SchedulerBuilder {
         return new DefaultScheduler(
                 serviceSpec,
                 schedulerConfig,
+                namespace,
                 customResources,
                 planCoordinator,
                 Optional.ofNullable(planCustomizer),
+                namespace,
                 frameworkStore,
                 stateStore,
                 configStore,

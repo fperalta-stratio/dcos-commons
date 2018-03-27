@@ -32,22 +32,19 @@ public class ResourceUtilsTest extends DefaultCapabilitiesTestSuite {
     @Test
     public void resourceNotProcessableForDifferentRoles() {
         Assert.assertFalse(ResourceUtils.isProcessable(
-                UNEXPECTED_RESOURCE_1,
-                Arrays.asList("different-role-0", "different-role-1")));
+                UNEXPECTED_RESOURCE_1, Arrays.asList("different-role-0", "different-role-1")));
     }
 
     @Test
     public void resourceProcessableForExactRoles() {
         Assert.assertTrue(ResourceUtils.isProcessable(
-                UNEXPECTED_RESOURCE_1,
-                Collections.singleton(TestConstants.ROLE)));
+                UNEXPECTED_RESOURCE_1, Collections.singleton(TestConstants.ROLE)));
     }
 
     @Test
     public void resourceProcessableForSubsetOfRoles() {
-        Assert.assertTrue(
-                ResourceUtils.isProcessable(UNEXPECTED_RESOURCE_1,
-                Arrays.asList(TestConstants.ROLE, "another-role")));
+        Assert.assertTrue(ResourceUtils.isProcessable(
+                UNEXPECTED_RESOURCE_1, Arrays.asList(TestConstants.ROLE, "another-role")));
     }
 
     @SuppressWarnings("deprecation")
