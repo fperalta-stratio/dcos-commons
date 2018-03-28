@@ -248,12 +248,7 @@ public class ServiceTestRunner {
     }
 
     /**
-<<<<<<< HEAD
-     * Assigns a list of custom configuration validators which will be applied to service configurations, in addition to
-     * the default configuration validators.
-=======
      * Adds a custom config validator to the validators to be used by the service.
->>>>>>> master
      */
     public ServiceTestRunner addCustomValidator(ConfigValidator<ServiceSpec> validator) {
         this.validators.add(validator);
@@ -307,6 +302,7 @@ public class ServiceTestRunner {
         Mockito.when(mockSchedulerConfig.getApiServerPort()).thenReturn(8080);
         Mockito.when(mockSchedulerConfig.getDcosSpace()).thenReturn("test-space");
         Mockito.when(mockSchedulerConfig.getServiceTLD()).thenReturn(Constants.DNS_TLD);
+        Mockito.when(mockSchedulerConfig.getSchedulerRegion()).thenReturn(Optional.of("test-scheduler-region"));
 
         Capabilities mockCapabilities = Mockito.mock(Capabilities.class);
         Mockito.when(mockCapabilities.supportsGpuResource()).thenReturn(true);

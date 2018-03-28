@@ -2,7 +2,6 @@ package com.mesosphere.sdk.hdfs.scheduler;
 
 import com.mesosphere.sdk.config.TaskEnvRouter;
 import com.mesosphere.sdk.curator.CuratorUtils;
-import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.http.EndpointUtils;
 import com.mesosphere.sdk.http.types.EndpointProducer;
 import com.mesosphere.sdk.offer.evaluate.placement.AndRule;
@@ -46,9 +45,6 @@ public class Main {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expected one file argument, got: " + Arrays.toString(args));
         }
-
-        Capabilities.getInstance().allowRegionAwareness();
-
         SchedulerRunner
                 .fromSchedulerBuilder(createSchedulerBuilder(new File(args[0])))
                 .run();

@@ -41,6 +41,7 @@ public class FrameworkRunner {
     private final SchedulerConfig schedulerConfig;
     private final FrameworkConfig frameworkConfig;
     private final boolean usingGpus;
+    private final boolean usingRegions;
 
     /**
      * Creates a new instance and does some internal initialization.
@@ -48,10 +49,15 @@ public class FrameworkRunner {
      * @param schedulerConfig scheduler config object to use for the process
      * @param frameworkConfig settings to use for registering the framework
      */
-    public FrameworkRunner(SchedulerConfig schedulerConfig, FrameworkConfig frameworkConfig, boolean usingGpus) {
+    public FrameworkRunner(
+            SchedulerConfig schedulerConfig,
+            FrameworkConfig frameworkConfig,
+            boolean usingGpus,
+            boolean usingRegions) {
         this.schedulerConfig = schedulerConfig;
         this.frameworkConfig = frameworkConfig;
         this.usingGpus = usingGpus;
+        this.usingRegions = usingRegions;
     }
 
     /**
@@ -150,7 +156,9 @@ public class FrameworkRunner {
             fwkInfoBuilder.addCapabilitiesBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.RESERVATION_REFINEMENT);
         }
-        if (capabilities.supportsRegionAwareness(schedulerConfig)) {
+
+        // Only enable if opted-in by the developer or user.
+        if (capabilities.supportsDomains() && usingRegions) {
             fwkInfoBuilder.addCapabilitiesBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE);
         }

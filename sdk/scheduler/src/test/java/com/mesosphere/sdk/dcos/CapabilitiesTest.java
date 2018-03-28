@@ -1,26 +1,12 @@
 package com.mesosphere.sdk.dcos;
 
 import org.junit.*;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-
-import com.mesosphere.sdk.scheduler.SchedulerConfig;
-
 import java.io.IOException;
-
-import static org.mockito.Mockito.*;
 
 /**
  * Tests for the {@link Capabilities} class
  */
 public class CapabilitiesTest {
-    @Mock SchedulerConfig mockSchedulerConfig;
-
-    @Before
-    public void beforeEach() {
-        MockitoAnnotations.initMocks(this);
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-    }
 
     @Test
     public void test_090() throws IOException {
@@ -29,10 +15,7 @@ public class CapabilitiesTest {
         Assert.assertFalse(capabilities.supportsRLimits());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -42,10 +25,7 @@ public class CapabilitiesTest {
         Assert.assertFalse(capabilities.supportsRLimits());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -55,10 +35,7 @@ public class CapabilitiesTest {
         Assert.assertFalse(capabilities.supportsRLimits());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -69,10 +46,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -83,10 +57,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -95,16 +66,14 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
-        //Secrets
+
+        // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertFalse(capabilities.supportsEnvBasedSecretsProtobuf());
         Assert.assertFalse(capabilities.supportsFileBasedSecrets());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -113,16 +82,14 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
-        //Secrets
+
+        // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertFalse(capabilities.supportsEnvBasedSecretsProtobuf());
         Assert.assertFalse(capabilities.supportsFileBasedSecrets());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -139,10 +106,7 @@ public class CapabilitiesTest {
         Assert.assertFalse(capabilities.supportsV1APIByDefault());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -151,6 +115,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
+
         // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsProtobuf());
@@ -159,10 +124,7 @@ public class CapabilitiesTest {
         Assert.assertFalse(capabilities.supportsV1APIByDefault());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertFalse(capabilities.supportsDomains());
     }
 
     @Test
@@ -171,6 +133,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
+
         // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsProtobuf());
@@ -179,10 +142,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsV1APIByDefault());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertTrue(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertTrue(capabilities.supportsDomains());
     }
 
     @Test
@@ -191,6 +151,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
+
         // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsProtobuf());
@@ -199,10 +160,7 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsV1APIByDefault());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertTrue(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertTrue(capabilities.supportsDomains());
     }
 
     @Test
@@ -211,16 +169,14 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsNamedVips());
         Assert.assertTrue(capabilities.supportsGpuResource());
         Assert.assertTrue(capabilities.supportsRLimits());
+
         // Secrets
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsDirectiveLabel());
         Assert.assertTrue(capabilities.supportsEnvBasedSecretsProtobuf());
         Assert.assertTrue(capabilities.supportsFileBasedSecrets());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertTrue(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertTrue(capabilities.supportsDomains());
     }
 
     @Test
@@ -235,13 +191,10 @@ public class CapabilitiesTest {
         Assert.assertTrue(capabilities.supportsFileBasedSecrets());
 
         // Region awareness
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(true);
-        Assert.assertTrue(capabilities.supportsRegionAwareness(mockSchedulerConfig));
-        when(mockSchedulerConfig.isRegionAwarenessEnabled()).thenReturn(false);
-        Assert.assertFalse(capabilities.supportsRegionAwareness(mockSchedulerConfig));
+        Assert.assertTrue(capabilities.supportsDomains());
     }
 
-    private Capabilities testCapabilities(String version) throws IOException {
+    private static Capabilities testCapabilities(String version) throws IOException {
         return new Capabilities(new DcosVersion(version));
     }
 }

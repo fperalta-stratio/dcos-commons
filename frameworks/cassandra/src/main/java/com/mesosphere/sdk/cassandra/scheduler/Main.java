@@ -3,7 +3,6 @@ package com.mesosphere.sdk.cassandra.scheduler;
 import com.google.common.base.Joiner;
 import com.mesosphere.sdk.cassandra.api.SeedsResource;
 import com.mesosphere.sdk.config.validate.TaskEnvCannotChange;
-import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.scheduler.DefaultScheduler;
 import com.mesosphere.sdk.scheduler.SchedulerBuilder;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
@@ -24,9 +23,6 @@ public class Main {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expected one file argument, got: " + Arrays.toString(args));
         }
-
-        Capabilities.getInstance().allowRegionAwareness();
-
         SchedulerRunner
                 .fromSchedulerBuilder(createSchedulerBuilder(new File(args[0])))
                 .run();

@@ -3,7 +3,6 @@ package com.mesosphere.sdk.dcos;
 import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.sdk.dcos.clients.DcosVersionClient;
 import com.mesosphere.sdk.offer.LoggingUtils;
-import com.mesosphere.sdk.scheduler.SchedulerConfig;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -17,7 +16,6 @@ public class Capabilities {
     private static Capabilities capabilities;
 
     private final DcosVersion dcosVersion;
-    private boolean serviceSupportsRegionAwareness;
 
     public static Capabilities getInstance() {
         synchronized (lock) {
@@ -44,7 +42,6 @@ public class Capabilities {
     @VisibleForTesting
     public Capabilities(DcosVersion dcosVersion) {
         this.dcosVersion = dcosVersion;
-        this.serviceSupportsRegionAwareness = false;
     }
 
     public DcosVersion getDcosVersion() {
@@ -100,19 +97,6 @@ public class Capabilities {
     public boolean supportsV1APIByDefault() {
         // The Mesos V1 HTTP API with strict mode enabled is supported by DC/OS 1.11 upwards
         return hasOrExceedsVersion(1, 11);
-    }
-
-    /**
-     * Enables region awareness for this service. Note that this is only supported on DC/OS 1.11+ clusters.
-     */
-    public void allowRegionAwareness() {
-        this.serviceSupportsRegionAwareness = true;
-    }
-
-    public boolean supportsRegionAwareness(SchedulerConfig schedulerConfig) {
-        // This feature is in BETA for 1.11, so requires explicit opt-in by end-users.
-        return (serviceSupportsRegionAwareness || schedulerConfig.isRegionAwarenessEnabled())
-                && hasOrExceedsVersion(1, 11);
     }
 
     public boolean supportsDomains() {

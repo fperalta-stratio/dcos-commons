@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.mesosphere.sdk.curator.CuratorUtils;
-import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.framework.FrameworkConfig;
 import com.mesosphere.sdk.http.types.EndpointProducer;
 import com.mesosphere.sdk.kafka.api.BrokerResource;
@@ -35,9 +34,6 @@ public class Main {
         if (args.length != 1) {
             throw new IllegalArgumentException("Expected one file argument, got: " + Arrays.toString(args));
         }
-
-        Capabilities.getInstance().allowRegionAwareness();
-
         SchedulerRunner
                 .fromSchedulerBuilder(createSchedulerBuilder(new File(args[0])))
                 .run();

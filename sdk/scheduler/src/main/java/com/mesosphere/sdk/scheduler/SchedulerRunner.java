@@ -89,7 +89,8 @@ public class SchedulerRunner implements Runnable {
         FrameworkRunner frameworkRunner = new FrameworkRunner(
                 schedulerConfig,
                 FrameworkConfig.fromServiceSpec(serviceSpec),
-                PodSpecsCannotUseUnsupportedFeatures.serviceRequestsGpuResources(serviceSpec));
+                PodSpecsCannotUseUnsupportedFeatures.serviceRequestsGpuResources(serviceSpec),
+                schedulerBuilder.isRegionAwarenessEnabled());
 
         AbstractScheduler scheduler = schedulerBuilder.build();
         scheduler.start();

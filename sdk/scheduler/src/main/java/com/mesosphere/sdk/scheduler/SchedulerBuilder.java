@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 public class SchedulerBuilder {
 
     private final Logger logger;
-    private ServiceSpec serviceSpec;
+    private final ServiceSpec originalServiceSpec;
     private final SchedulerConfig schedulerConfig;
     private final Persister persister;
 
@@ -68,6 +68,7 @@ public class SchedulerBuilder {
     private RecoveryPlanOverriderFactory recoveryPlanOverriderFactory;
     private PlanCustomizer planCustomizer;
     private Optional<String> namespace = Optional.empty();
+    private boolean regionAwarenessEnabled = false;
     private Optional<ArtifactQueries.TemplateUrlFactory> templateUrlFactory = Optional.empty();
 
     SchedulerBuilder(ServiceSpec serviceSpec, SchedulerConfig schedulerConfig) throws PersisterException {
@@ -83,7 +84,7 @@ public class SchedulerBuilder {
         // NOTE: we specifically avoid accessing the provided persister before build() is called.
         // This is to ensure that upstream has a chance to e.g. lock it via CuratorLocker.
         this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
-        this.serviceSpec = serviceSpec;
+        this.originalServiceSpec = serviceSpec;
         this.schedulerConfig = schedulerConfig;
         this.persister = persister;
     }
@@ -92,7 +93,7 @@ public class SchedulerBuilder {
      * Returns the {@link ServiceSpec} which was provided via the constructor.
      */
     public ServiceSpec getServiceSpec() {
-        return serviceSpec;
+        return originalServiceSpec;
     }
 
     /**
@@ -108,6 +109,14 @@ public class SchedulerBuilder {
      */
     public Persister getPersister() {
         return persister;
+    }
+
+    /**
+     * Returns whether the developer has enabled region awareness for this service, either via
+     * {@link #withSingleRegionConstraint()} or via the scheduler process environment.
+     */
+    public boolean isRegionAwarenessEnabled() {
+        return regionAwarenessEnabled || schedulerConfig.isRegionAwarenessEnabled();
     }
 
     /**
@@ -177,42 +186,8 @@ public class SchedulerBuilder {
      * Configures the resulting scheduler instance with a region constraint.
      */
     public SchedulerBuilder withSingleRegionConstraint() {
-         if (!Capabilities.getInstance().supportsDomains()) {
-             // If this is an older version of DC/OS that doesn't support multi-region deployments, this is a noop.
-             return this;
-         }
-
-         Optional<String> schedulerRegion = schedulerConfig.getSchedulerRegion();
-         PlacementRule regionRule = getRegionRule(schedulerRegion);
-
-         List<PodSpec> updatedPodSpecs = serviceSpec.getPods().stream()
-                 .map(p -> podWithPlacementRule(p, regionRule))
-                 .collect(Collectors.toList());
-
-         DefaultServiceSpec.Builder builder = DefaultServiceSpec.newBuilder(serviceSpec).pods(updatedPodSpecs);
-         if (schedulerRegion.isPresent()) {
-             builder.region(schedulerRegion.get());
-         }
-         serviceSpec = builder.build();
-
+         this.regionAwarenessEnabled = true;
          return this;
-    }
-
-    @VisibleForTesting
-    static PlacementRule getRegionRule(Optional<String> schedulerRegion) {
-        if (!schedulerRegion.isPresent()) {
-            return new IsLocalRegionRule();
-        }
-
-        return RegionRuleFactory.getInstance().require(ExactMatcher.create(schedulerRegion.get()));
-    }
-
-    private static PodSpec podWithPlacementRule(PodSpec podSpec, PlacementRule placementRule) {
-        if (podSpec.getPlacementRule().isPresent()) {
-            placementRule = new AndRule(placementRule, podSpec.getPlacementRule().get());
-        }
-
-        return DefaultPodSpec.newBuilder(podSpec).placementRule(placementRule).build();
     }
 
     /**
@@ -242,6 +217,56 @@ public class SchedulerBuilder {
      * @throws IllegalArgumentException if validating the provided configuration failed
      */
     public AbstractScheduler build() {
+        // If region awareness is enabled (via java bit or via env) and the cluster supports it, update the ServiceSpec
+        // to include region constraints.
+        final ServiceSpec serviceSpec;
+        if (Capabilities.getInstance().supportsDomains()) {
+            // This cluster supports domains. We need to update pod placement with region configuration, for any pods
+            // that weren't already configured by the developer (expected to be rare, but possible).
+
+            // Whether region awareness is enabled for the service (via env or via java).
+            boolean regionAwarenessEnabled = isRegionAwarenessEnabled();
+            // A region to target, as specified in env, if any.
+            Optional<String> schedulerRegion = schedulerConfig.getSchedulerRegion();
+
+            // Target the specified region, or use the local region.
+            // Local region is determined at framework registration, see IsLocalRegionRule.setLocalDomain().
+            final PlacementRule placementRuleToAdd;
+            if (regionAwarenessEnabled && schedulerRegion.isPresent()) {
+                logger.info("Updating pods with placement rule for region={}", schedulerRegion.get());
+                placementRuleToAdd =
+                        RegionRuleFactory.getInstance().require(ExactMatcher.create(schedulerRegion.get()));
+            } else {
+                logger.info("Updating pods with local region placement rule: region awareness={}, scheduler region={}",
+                        regionAwarenessEnabled, schedulerRegion);
+                placementRuleToAdd = new IsLocalRegionRule();
+            }
+
+            List<PodSpec> updatedPodSpecs = new ArrayList<>();
+            for (PodSpec podSpec : originalServiceSpec.getPods()) {
+                if (PlacementUtils.placementRuleReferencesRegion(podSpec)) {
+                    // Pod already has a region constraint (specified by developer?). Leave it as-is.
+                    logger.info("Pod {} already has a region rule defined, leaving as-is", podSpec.getType());
+                    updatedPodSpecs.add(podSpec);
+                } else {
+                    // Combine the new rule with any existing rules:
+                    PlacementRule mergedRule = podSpec.getPlacementRule().isPresent()
+                            ? new AndRule(placementRuleToAdd, podSpec.getPlacementRule().get())
+                            : placementRuleToAdd;
+                    updatedPodSpecs.add(DefaultPodSpec.newBuilder(podSpec).placementRule(mergedRule).build());
+                }
+            }
+
+            DefaultServiceSpec.Builder builder =
+                    DefaultServiceSpec.newBuilder(originalServiceSpec).pods(updatedPodSpecs);
+            if (schedulerRegion.isPresent()) {
+                builder.region(schedulerRegion.get());
+            }
+            serviceSpec = builder.build();
+        } else {
+            serviceSpec = originalServiceSpec;
+        }
+
         // NOTE: we specifically avoid accessing the provided persister before build() is called.
         // This is to ensure that upstream has a chance to e.g. lock it via CuratorLocker.
 
@@ -288,7 +313,7 @@ public class SchedulerBuilder {
         }
 
         try {
-            return getDefaultScheduler(new FrameworkStore(persister), stateStore, configStore);
+            return getDefaultScheduler(serviceSpec, new FrameworkStore(persister), stateStore, configStore);
         } catch (ConfigStoreException e) {
             logger.error("Failed to construct scheduler.", e);
             SchedulerUtils.hardExit(ExitCode.INITIALIZATION_FAILURE, e);
@@ -303,6 +328,7 @@ public class SchedulerBuilder {
      * @throws IllegalArgumentException if config validation failed when updating the target config.
      */
     private DefaultScheduler getDefaultScheduler(
+            ServiceSpec serviceSpec,
             FrameworkStore frameworkStore,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore) throws ConfigStoreException {
@@ -327,11 +353,6 @@ public class SchedulerBuilder {
                 logger.info("Unable to retrieve last configuration. Assuming that no prior deployment has completed");
             }
         }
-
-        List<PodSpec> pods = serviceSpec.getPods().stream()
-                .map(podSpec -> updatePodPlacement(podSpec))
-                .collect(Collectors.toList());
-        serviceSpec = DefaultServiceSpec.newBuilder(serviceSpec).pods(pods).build();
 
         // Update/validate config as needed to reflect the new service spec:
         Collection<ConfigValidator<ServiceSpec>> configValidators = new ArrayList<>();
@@ -370,11 +391,12 @@ public class SchedulerBuilder {
         PlanManager deploymentPlanManager =
                 DefaultPlanManager.createProceeding(getDeployPlan(plans).get());
         PlanManager recoveryPlanManager = getRecoveryPlanManager(
+                serviceSpec,
                 Optional.ofNullable(recoveryPlanOverriderFactory),
                 stateStore,
                 configStore,
                 plans);
-        Optional<PlanManager> decommissionPlanManager = getDecommissionPlanManager(stateStore);
+        Optional<PlanManager> decommissionPlanManager = getDecommissionPlanManager(serviceSpec, stateStore);
         PlanCoordinator planCoordinator = buildPlanCoordinator(
                 serviceSpec.getName(),
                 deploymentPlanManager,
@@ -398,6 +420,7 @@ public class SchedulerBuilder {
     }
 
     private PlanManager getRecoveryPlanManager(
+            ServiceSpec serviceSpec,
             Optional<RecoveryPlanOverriderFactory> recoveryOverriderFactory,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
@@ -432,7 +455,7 @@ public class SchedulerBuilder {
                 overrideRecoveryPlanManagers);
     }
 
-    private Optional<PlanManager> getDecommissionPlanManager(StateStore stateStore) {
+    private Optional<PlanManager> getDecommissionPlanManager(ServiceSpec serviceSpec, StateStore stateStore) {
         DecommissionPlanFactory decommissionPlanFactory = new DecommissionPlanFactory(serviceSpec, stateStore);
         Optional<Plan> decommissionPlan = decommissionPlanFactory.getPlan();
         if (decommissionPlan.isPresent()) {
@@ -468,29 +491,6 @@ public class SchedulerBuilder {
                 .collect(Collectors.toList()));
 
         return new DefaultPlanCoordinator(serviceName, planManagers);
-    }
-
-    /**
-     * Update pods with appropriate placement constraints to enforce user REGION intent.
-     * If a pod's placement rules do not explicitly reference a REGION the assumption should be that
-     * the user intends that a pod be restriced to the local REGION.
-     *
-     * @param podSpec The {@link PodSpec} whose placement rule will be updated to enforce appropriate region placement.
-     * @return The updated {@link PodSpec}
-     */
-    static PodSpec updatePodPlacement(PodSpec podSpec) {
-        if (!Capabilities.getInstance().supportsDomains() || PlacementUtils.placementRuleReferencesRegion(podSpec)) {
-            return podSpec;
-        }
-
-        PlacementRule rule;
-        if (podSpec.getPlacementRule().isPresent()) {
-            rule = new AndRule(new IsLocalRegionRule(), podSpec.getPlacementRule().get());
-        } else {
-            rule = new IsLocalRegionRule();
-        }
-
-        return DefaultPodSpec.newBuilder(podSpec).placementRule(rule).build();
     }
 
     /**

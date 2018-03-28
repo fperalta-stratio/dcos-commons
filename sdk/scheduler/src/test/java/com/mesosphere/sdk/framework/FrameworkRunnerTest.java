@@ -49,7 +49,7 @@ public class FrameworkRunnerTest {
 
     @Test
     public void testFinishedUninstall() throws Exception {
-        FrameworkRunner runner = new FrameworkRunner(mockSchedulerConfig, null, false);
+        FrameworkRunner runner = new FrameworkRunner(mockSchedulerConfig, null, false, false);
         when(mockSchedulerConfig.isUninstallEnabled()).thenReturn(true);
         when(mockPersister.get("FrameworkID")).thenThrow(new PersisterException(Reason.NOT_FOUND, "hi"));
         Exception abort = new IllegalStateException("Aborting HTTP server run");
@@ -72,7 +72,7 @@ public class FrameworkRunnerTest {
         SchedulerConfig schedulerConfig = SchedulerConfig.fromEnvStore(envStore);
         FrameworkConfig frameworkConfig = FrameworkConfig.fromEnvStore(envStore);
 
-        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, false);
+        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, false, false);
 
         Protos.FrameworkInfo info = runner.getFrameworkInfo(Optional.empty());
         Assert.assertEquals("/path/to/test-service", info.getName());
@@ -93,7 +93,7 @@ public class FrameworkRunnerTest {
         SchedulerConfig schedulerConfig = SchedulerConfig.fromEnvStore(envStore);
         FrameworkConfig frameworkConfig = FrameworkConfig.fromEnvStore(envStore);
 
-        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, false);
+        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, false, false);
 
         Protos.FrameworkInfo info = runner.getFrameworkInfo(Optional.of(TestConstants.FRAMEWORK_ID));
         Assert.assertEquals("/path/to/test-service", info.getName());
@@ -121,10 +121,10 @@ public class FrameworkRunnerTest {
 
         when(mockCapabilities.supportsGpuResource()).thenReturn(true);
         when(mockCapabilities.supportsPreReservedResources()).thenReturn(true);
-        when(mockCapabilities.supportsRegionAwareness(schedulerConfig)).thenReturn(true);
+        when(mockCapabilities.supportsDomains()).thenReturn(true);
         when(mockCapabilities.supportsGpuResource()).thenReturn(true);
 
-        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, true);
+        FrameworkRunner runner = new FrameworkRunner(schedulerConfig, frameworkConfig, true, true);
         Protos.FrameworkInfo info = runner.getFrameworkInfo(Optional.of(TestConstants.FRAMEWORK_ID));
         Assert.assertEquals("/path/to/test-service", info.getName());
         Assert.assertEquals("custom-user", info.getUser());
