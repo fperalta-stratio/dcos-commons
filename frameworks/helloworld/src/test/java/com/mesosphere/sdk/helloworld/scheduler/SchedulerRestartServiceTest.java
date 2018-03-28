@@ -41,7 +41,6 @@ public class SchedulerRestartServiceTest {
         testTaskWithReadinessCheckHasStatus(0, Status.COMPLETE, false);
     }
 
-
     private static void testTaskWithReadinessCheckHasStatus(
             int readinessCheckStatusCode, Status expectedStatus, boolean useDefaultExecutor) throws Exception {
         Collection<SimulationTick> ticks = new ArrayList<>();

@@ -162,7 +162,7 @@ public class DefaultSchedulerTest {
                 .build();
     }
 
-    private Capabilities getCapabilitiesWithDefaultGpuSupport() throws Exception {
+    private Capabilities getCapabilities() throws Exception {
         return new Capabilities(new DcosVersion("1.10-dev")) {
             @Override
             public boolean supportsGpuResource() {
@@ -206,7 +206,7 @@ public class DefaultSchedulerTest {
 
         when(mockSchedulerConfig.isStateCacheEnabled()).thenReturn(true);
         ServiceSpec serviceSpec = getServiceSpec(podA, podB);
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         persister = new MemPersister();
         // Emulate behavior of upstream FrameworkScheduler, which handled registering with Mesos:
         new FrameworkStore(persister).storeFrameworkId(TestConstants.FRAMEWORK_ID);
@@ -255,7 +255,7 @@ public class DefaultSchedulerTest {
     public void updatePerTaskASpecification() throws InterruptedException, IOException, Exception {
         // Launch A and B in original configuration
         testLaunchB();
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         defaultScheduler = getScheduler(getServiceSpec(updatedPodA, podB));
 
         Assert.assertEquals(Arrays.asList(Status.PENDING, Status.COMPLETE, Status.PENDING),
@@ -266,7 +266,7 @@ public class DefaultSchedulerTest {
     public void updatePerTaskBSpecification() throws InterruptedException, IOException, Exception {
         // Launch A and B in original configuration
         testLaunchB();
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         defaultScheduler = getScheduler(getServiceSpec(podA, updatedPodB));
 
         Assert.assertEquals(Arrays.asList(Status.COMPLETE, Status.PENDING, Status.PENDING),
@@ -278,7 +278,7 @@ public class DefaultSchedulerTest {
         // Launch A and B in original configuration
         testLaunchB();
 
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         defaultScheduler = getScheduler(getServiceSpec(scaledPodA, podB));
 
         Assert.assertEquals(
@@ -397,7 +397,7 @@ public class DefaultSchedulerTest {
         Assert.assertEquals(0, getRecoveryPlan().getChildren().size());
 
         // Perform Configuration Update
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         defaultScheduler = getScheduler(getServiceSpec(updatedPodA, podB));
         plan = getDeploymentPlan();
         stepTaskA0 = plan.getChildren().get(0).getChildren().get(0);
@@ -463,7 +463,7 @@ public class DefaultSchedulerTest {
         UUID targetConfigId = defaultScheduler.getConfigStore().getTargetConfig();
 
         // Build new scheduler with invalid config (shrinking task count)
-        Capabilities.overrideCapabilities(getCapabilitiesWithDefaultGpuSupport());
+        Capabilities.overrideCapabilities(getCapabilities());
         defaultScheduler = getScheduler(getServiceSpec(podA, invalidPodB));
 
         // Ensure prior target configuration is still intact

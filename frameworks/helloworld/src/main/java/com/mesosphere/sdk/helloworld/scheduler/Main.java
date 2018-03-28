@@ -2,6 +2,7 @@ package com.mesosphere.sdk.helloworld.scheduler;
 
 import com.mesosphere.sdk.config.TaskEnvRouter;
 import com.mesosphere.sdk.offer.Constants;
+import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.scheduler.DefaultScheduler;
 import com.mesosphere.sdk.scheduler.SchedulerBuilder;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
@@ -9,7 +10,6 @@ import com.mesosphere.sdk.scheduler.SchedulerRunner;
 import com.mesosphere.sdk.specification.*;
 import com.mesosphere.sdk.specification.yaml.RawServiceSpec;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -17,7 +17,7 @@ import java.io.File;
  * Main entry point for the Scheduler.
  */
 public class Main {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static final Logger LOGGER = LoggingUtils.getLogger(Main.class);
 
     private static final Integer COUNT = Integer.valueOf(System.getenv("HELLO_COUNT"));
     private static final Double CPUS = Double.valueOf(System.getenv("HELLO_CPUS"));

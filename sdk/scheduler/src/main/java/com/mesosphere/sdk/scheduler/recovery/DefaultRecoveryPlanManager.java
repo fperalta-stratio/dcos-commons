@@ -46,13 +46,12 @@ public class DefaultRecoveryPlanManager implements PlanManager {
     protected final Object planLock = new Object();
 
     public DefaultRecoveryPlanManager(
-            String serviceName,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
             Set<String> recoverableTaskNames,
             LaunchConstrainer launchConstrainer,
             FailureMonitor failureMonitor) {
-        this(serviceName,
+        this(
                 stateStore,
                 configStore,
                 recoverableTaskNames,
@@ -62,14 +61,13 @@ public class DefaultRecoveryPlanManager implements PlanManager {
     }
 
     public DefaultRecoveryPlanManager(
-            String serviceName,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
             Set<String> recoverableTaskNames,
             LaunchConstrainer launchConstrainer,
             FailureMonitor failureMonitor,
             List<RecoveryPlanOverrider> overrideRecoveryManagers) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
+        this.logger = LoggingUtils.getLogger(getClass());
         this.stateStore = stateStore;
         this.configStore = configStore;
         this.recoverableTaskNames = recoverableTaskNames;

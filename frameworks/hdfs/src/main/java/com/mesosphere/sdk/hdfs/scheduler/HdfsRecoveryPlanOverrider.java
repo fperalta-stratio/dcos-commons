@@ -1,5 +1,6 @@
 package com.mesosphere.sdk.hdfs.scheduler;
 
+import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.scheduler.plan.*;
 import com.mesosphere.sdk.scheduler.plan.strategy.SerialStrategy;
 import com.mesosphere.sdk.scheduler.recovery.RecoveryStep;
@@ -8,7 +9,6 @@ import com.mesosphere.sdk.scheduler.recovery.RecoveryType;
 import com.mesosphere.sdk.scheduler.recovery.constrain.UnconstrainedLaunchConstrainer;
 import com.mesosphere.sdk.state.StateStore;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -17,7 +17,7 @@ import java.util.*;
  * when appropriate.
  */
 public class HdfsRecoveryPlanOverrider implements RecoveryPlanOverrider {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggingUtils.getLogger(getClass());
     private static final String PHASE_NAME_TEMPLATE = "permanent-%s-failure-recovery";
     private static final String NN_PHASE_NAME = "name";
     private static final String JN_PHASE_NAME = "journal";

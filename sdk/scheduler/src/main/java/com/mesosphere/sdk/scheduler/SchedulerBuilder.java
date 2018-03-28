@@ -8,7 +8,7 @@ import com.mesosphere.sdk.config.validate.ConfigValidator;
 import com.mesosphere.sdk.config.validate.DefaultConfigValidators;
 import com.mesosphere.sdk.curator.CuratorPersister;
 import com.mesosphere.sdk.dcos.Capabilities;
-import com.mesosphere.sdk.framework.ExitCode;
+import com.mesosphere.sdk.framework.ProcessExit;
 import com.mesosphere.sdk.http.endpoints.ArtifactResource;
 import com.mesosphere.sdk.http.queries.ArtifactQueries;
 import com.mesosphere.sdk.http.types.EndpointProducer;
@@ -43,7 +43,7 @@ import com.mesosphere.sdk.state.StateStoreUtils;
 import com.mesosphere.sdk.storage.Persister;
 import com.mesosphere.sdk.storage.PersisterCache;
 import com.mesosphere.sdk.storage.PersisterException;
-import org.apache.mesos.Protos;
+
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -56,6 +56,7 @@ import java.util.stream.Collectors;
 public class SchedulerBuilder {
 
     private final Logger logger;
+
     private final ServiceSpec originalServiceSpec;
     private final SchedulerConfig schedulerConfig;
     private final Persister persister;
@@ -83,7 +84,7 @@ public class SchedulerBuilder {
     SchedulerBuilder(ServiceSpec serviceSpec, SchedulerConfig schedulerConfig, Persister persister) {
         // NOTE: we specifically avoid accessing the provided persister before build() is called.
         // This is to ensure that upstream has a chance to e.g. lock it via CuratorLocker.
-        this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
+        this.logger = LoggingUtils.getLogger(getClass());
         this.originalServiceSpec = serviceSpec;
         this.schedulerConfig = schedulerConfig;
         this.persister = persister;
@@ -186,8 +187,8 @@ public class SchedulerBuilder {
      * Configures the resulting scheduler instance with a region constraint.
      */
     public SchedulerBuilder withSingleRegionConstraint() {
-         this.regionAwarenessEnabled = true;
-         return this;
+        this.regionAwarenessEnabled = true;
+        return this;
     }
 
     /**
@@ -308,7 +309,7 @@ public class SchedulerBuilder {
                 // because the service is likely now in an inconsistent state resulting from the incomplete uninstall.
                 logger.error("Service has been previously told to uninstall, this cannot be reversed. " +
                         "Reenable the uninstall flag to complete the process.");
-                SchedulerUtils.hardExit(ExitCode.SCHEDULER_ALREADY_UNINSTALLING);
+                ProcessExit.exit(ProcessExit.SCHEDULER_ALREADY_UNINSTALLING);
             }
         }
 
@@ -316,7 +317,7 @@ public class SchedulerBuilder {
             return getDefaultScheduler(serviceSpec, new FrameworkStore(persister), stateStore, configStore);
         } catch (ConfigStoreException e) {
             logger.error("Failed to construct scheduler.", e);
-            SchedulerUtils.hardExit(ExitCode.INITIALIZATION_FAILURE, e);
+            ProcessExit.exit(ProcessExit.INITIALIZATION_FAILURE, e);
             return null; // This is so the compiler doesn't complain.  The scheduler is going down anyway.
         }
     }
@@ -411,7 +412,6 @@ public class SchedulerBuilder {
                 customResources,
                 planCoordinator,
                 Optional.ofNullable(planCustomizer),
-                namespace,
                 frameworkStore,
                 stateStore,
                 configStore,
@@ -446,7 +446,6 @@ public class SchedulerBuilder {
             failureMonitor = new NeverFailureMonitor();
         }
         return new DefaultRecoveryPlanManager(
-                serviceSpec.getName(),
                 stateStore,
                 configStore,
                 PlanUtils.getLaunchableTasks(plans),
@@ -455,7 +454,7 @@ public class SchedulerBuilder {
                 overrideRecoveryPlanManagers);
     }
 
-    private Optional<PlanManager> getDecommissionPlanManager(ServiceSpec serviceSpec, StateStore stateStore) {
+    private static Optional<PlanManager> getDecommissionPlanManager(ServiceSpec serviceSpec, StateStore stateStore) {
         DecommissionPlanFactory decommissionPlanFactory = new DecommissionPlanFactory(serviceSpec, stateStore);
         Optional<Plan> decommissionPlan = decommissionPlanFactory.getPlan();
         if (decommissionPlan.isPresent()) {
@@ -490,7 +489,7 @@ public class SchedulerBuilder {
                 .map(DefaultPlanManager::createInterrupted)
                 .collect(Collectors.toList()));
 
-        return new DefaultPlanCoordinator(serviceName, planManagers);
+        return new DefaultPlanCoordinator(planManagers);
     }
 
     /**
@@ -630,23 +629,4 @@ public class SchedulerBuilder {
             throw new IllegalStateException(e);
         }
     }
-
-    @SuppressWarnings("deprecation") // mute warning for FrameworkInfo.setRole()
-    private static void setRoles(Protos.FrameworkInfo.Builder fwkInfoBuilder, ServiceSpec serviceSpec) {
-        List<String> preReservedRoles =
-                serviceSpec.getPods().stream()
-                        .filter(podSpec -> !podSpec.getPreReservedRole().equals(Constants.ANY_ROLE))
-                        .map(podSpec -> podSpec.getPreReservedRole() + "/" + serviceSpec.getRole())
-                        .collect(Collectors.toList());
-        if (preReservedRoles.isEmpty()) {
-            fwkInfoBuilder.setRole(serviceSpec.getRole());
-        } else {
-            fwkInfoBuilder.addCapabilities(Protos.FrameworkInfo.Capability.newBuilder()
-                    .setType(Protos.FrameworkInfo.Capability.Type.MULTI_ROLE));
-            fwkInfoBuilder.addRoles(serviceSpec.getRole());
-            fwkInfoBuilder.addAllRoles(preReservedRoles);
-        }
-    }
-
-
 }

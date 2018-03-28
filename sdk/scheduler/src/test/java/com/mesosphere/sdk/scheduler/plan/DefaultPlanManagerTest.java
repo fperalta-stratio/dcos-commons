@@ -3,7 +3,7 @@ package com.mesosphere.sdk.scheduler.plan;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.mesos.Protos;
 
-import com.mesosphere.sdk.scheduler.Reconciler;
+import com.mesosphere.sdk.scheduler.ExplicitReconciler;
 import com.mesosphere.sdk.scheduler.plan.strategy.SerialStrategy;
 import com.mesosphere.sdk.testutils.TestConstants;
 import org.junit.Assert;
@@ -26,7 +26,7 @@ public class DefaultPlanManagerTest {
     private PlanManager planManager;
 
     @Mock Step mockStep;
-    @Mock Reconciler reconciler;
+    @Mock ExplicitReconciler reconciler;
     @Mock private PodInstanceRequirement podInstance0;
     @Mock private PodInstanceRequirement podInstance1;
 

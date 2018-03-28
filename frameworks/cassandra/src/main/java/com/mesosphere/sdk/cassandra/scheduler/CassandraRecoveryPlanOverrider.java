@@ -1,5 +1,6 @@
 package com.mesosphere.sdk.cassandra.scheduler;
 
+import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.scheduler.plan.*;
 import com.mesosphere.sdk.scheduler.plan.strategy.SerialStrategy;
 import com.mesosphere.sdk.scheduler.recovery.RecoveryStep;
@@ -18,7 +19,6 @@ import com.mesosphere.sdk.state.StateStoreUtils;
 
 import org.apache.mesos.Protos;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
  * behavior when appropriate.
  */
 public class CassandraRecoveryPlanOverrider implements RecoveryPlanOverrider {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final Logger logger = LoggingUtils.getLogger(getClass());
     private static final String RECOVERY_PHASE_NAME = "permanent-node-failure-recovery";
     private final StateStore stateStore;
     private final Plan replaceNodePlan;

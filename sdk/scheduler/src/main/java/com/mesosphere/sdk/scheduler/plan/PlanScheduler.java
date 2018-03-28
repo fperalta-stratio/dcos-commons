@@ -22,8 +22,8 @@ public class PlanScheduler {
     private final OfferEvaluator offerEvaluator;
     private final StateStore stateStore;
 
-    public PlanScheduler(String serviceName, OfferEvaluator offerEvaluator, StateStore stateStore) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
+    public PlanScheduler(OfferEvaluator offerEvaluator, StateStore stateStore) {
+        this.logger = LoggingUtils.getLogger(getClass());
         this.offerEvaluator = offerEvaluator;
         this.stateStore = stateStore;
     }

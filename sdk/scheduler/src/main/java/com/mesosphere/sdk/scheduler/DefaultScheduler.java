@@ -78,11 +78,10 @@ public class DefaultScheduler extends AbstractScheduler {
     protected DefaultScheduler(
             ServiceSpec serviceSpec,
             SchedulerConfig schedulerConfig,
-            Optional<String> resourceNamespace,
+            Optional<String> namespace,
             Collection<Object> customResources,
             PlanCoordinator planCoordinator,
             Optional<PlanCustomizer> planCustomizer,
-            Optional<String> namespace,
             FrameworkStore frameworkStore,
             StateStore stateStore,
             ConfigStore<ServiceSpec> configStore,
@@ -119,7 +118,6 @@ public class DefaultScheduler extends AbstractScheduler {
 
         this.offerOutcomeTracker = new OfferOutcomeTracker();
         this.planScheduler = new PlanScheduler(
-                serviceSpec.getName(),
                 new OfferEvaluator(
                         frameworkStore,
                         stateStore,
@@ -128,7 +126,7 @@ public class DefaultScheduler extends AbstractScheduler {
                         configStore.getTargetConfig(),
                         templateUrlFactory,
                         schedulerConfig,
-                        resourceNamespace,
+                        namespace,
                         Capabilities.getInstance().supportsDefaultExecutor()),
                 stateStore);
     }

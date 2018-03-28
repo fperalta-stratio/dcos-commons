@@ -26,13 +26,11 @@ public class Main {
 
     private static SchedulerBuilder createSchedulerBuilder(File yamlSpecFile) throws Exception {
         RawServiceSpec rawServiceSpec = RawServiceSpec.newBuilder(yamlSpecFile).build();
-
         SchedulerConfig schedulerConfig = SchedulerConfig.fromEnv();
 
         // Modify pod environments in two ways:
         // 1) Elastic is unhappy if cluster.name contains slashes. Replace any slashes with double-underscores.
         // 2) Base64 decode the custom YAML block.
-
         DefaultServiceSpec.Generator serviceSpecGenerator =
                 DefaultServiceSpec.newGenerator(
                         rawServiceSpec, schedulerConfig, yamlSpecFile.getParentFile())

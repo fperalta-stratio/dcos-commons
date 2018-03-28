@@ -64,8 +64,7 @@ public class PodSpecsCannotUseUnsupportedFeatures implements ConfigValidator<Ser
     }
 
     public static boolean serviceRequestsGpuResources(ServiceSpec serviceSpec) {
-        return serviceSpec.getPods().stream()
-                .anyMatch(podSpec -> PodSpecsCannotUseUnsupportedFeatures.podRequestsGpuResources(podSpec));
+        return serviceSpec.getPods().stream().anyMatch(podSpec -> podRequestsGpuResources(podSpec));
     }
 
     private static boolean podRequestsGpuResources(PodSpec podSpec) {

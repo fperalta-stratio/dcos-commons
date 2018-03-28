@@ -348,17 +348,18 @@ public class SchedulerConfig {
     }
 
     /**
-     * Returns the duration to wait before performing the first implicit reconcilation, in milliseconds.
-     */
-    public long getImplicitReconcileDelayMs() {
-        return envStore.getOptionalLong(IMPLICIT_RECONCILIATION_DELAY_MS_ENV, 0 /* no delay */);
-    }
-
-    /**
      * Returns the {@code autoip} service TLD to be used in advertised endpoints.
      */
     public String getServiceTLD() {
         return envStore.getOptional(USER_SPECIFIED_TLD_ENVVAR, Constants.DNS_TLD);
+    }
+
+    /**
+     * Returns the duration to wait after framework registration before performing the first implicit reconcilation, in
+     * milliseconds.
+     */
+    public long getImplicitReconcileDelayMs() {
+        return envStore.getOptionalLong(IMPLICIT_RECONCILIATION_DELAY_MS_ENV, 0 /* no delay */);
     }
 
     /**

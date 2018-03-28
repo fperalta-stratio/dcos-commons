@@ -1,9 +1,9 @@
 package com.mesosphere.sdk.kafka.api;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.mesosphere.sdk.http.ResponseUtils;
+import com.mesosphere.sdk.offer.LoggingUtils;
 
 import org.json.JSONObject;
 
@@ -20,7 +20,7 @@ import java.util.Optional;
 @Path("/v1/brokers")
 @Produces("application/json")
 public class BrokerResource {
-    private final Logger log = LoggerFactory.getLogger(BrokerResource.class);
+    private final Logger log = LoggingUtils.getLogger(BrokerResource.class);
     private KafkaZKClient kafkaZkClient;
 
     public BrokerResource(KafkaZKClient kafkaZkClient) {

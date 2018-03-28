@@ -1,7 +1,9 @@
 package com.mesosphere.sdk.kafka.api;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.mesosphere.sdk.offer.LoggingUtils;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -22,7 +24,7 @@ import java.util.stream.StreamSupport;
  * Read-only interface for retrieving information from ZooKeeper for Kafka brokers and topics.
  */
 public class KafkaZKClient {
-    private static final Logger log = LoggerFactory.getLogger(KafkaZKClient.class);
+    private static final Logger log = LoggingUtils.getLogger(KafkaZKClient.class);
 
     private static final int POLL_DELAY_MS = 1000;
     private static final int CURATOR_MAX_RETRIES = 3;

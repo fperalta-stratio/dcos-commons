@@ -20,7 +20,6 @@ import com.mesosphere.sdk.offer.evaluate.placement.IsLocalRegionRule;
 import com.mesosphere.sdk.scheduler.MesosEventClient;
 import com.mesosphere.sdk.scheduler.Metrics;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
-import com.mesosphere.sdk.scheduler.SchedulerUtils;
 import com.mesosphere.sdk.scheduler.MesosEventClient.StatusResponse;
 import com.mesosphere.sdk.state.FrameworkStore;
 import com.mesosphere.sdk.storage.Persister;
@@ -117,7 +116,7 @@ public class FrameworkScheduler implements Scheduler {
         } catch (Exception e) {
             LOGGER.error(String.format(
                     "Unable to store registered framework ID '%s'", frameworkId.getValue()), e);
-            SchedulerUtils.hardExit(ExitCode.REGISTRATION_FAILURE, e);
+            ProcessExit.exit(ProcessExit.REGISTRATION_FAILURE, e);
         }
 
         updateDriverAndDomain(driver, masterInfo);
@@ -240,7 +239,7 @@ public class FrameworkScheduler implements Scheduler {
     @Override
     public void disconnected(SchedulerDriver driver) {
         LOGGER.error("Disconnected from Master, shutting down.");
-        SchedulerUtils.hardExit(ExitCode.DISCONNECTED);
+        ProcessExit.exit(ProcessExit.DISCONNECTED);
     }
 
     @Override
@@ -257,7 +256,7 @@ public class FrameworkScheduler implements Scheduler {
     @Override
     public void error(SchedulerDriver driver, String message) {
         LOGGER.error("SchedulerDriver returned an error, shutting down: {}", message);
-        SchedulerUtils.hardExit(ExitCode.ERROR);
+        ProcessExit.exit(ProcessExit.ERROR);
     }
 
     private static void updateDriverAndDomain(SchedulerDriver driver, Protos.MasterInfo masterInfo) {

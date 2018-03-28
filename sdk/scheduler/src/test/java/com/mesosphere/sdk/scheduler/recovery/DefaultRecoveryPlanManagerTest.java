@@ -107,7 +107,6 @@ public class DefaultRecoveryPlanManagerTest extends DefaultCapabilitiesTestSuite
 
         taskInfos = Collections.singletonList(taskInfo);
         recoveryManager = spy(new DefaultRecoveryPlanManager(
-                "foo",
                 stateStore,
                 configStore,
                 new HashSet<>(Arrays.asList(taskInfo.getName())),
@@ -117,7 +116,6 @@ public class DefaultRecoveryPlanManagerTest extends DefaultCapabilitiesTestSuite
         final Plan mockDeployPlan = mock(Plan.class);
         when(mockDeployManager.getPlan()).thenReturn(mockDeployPlan);
         planScheduler = new PlanScheduler(
-                serviceSpec.getName(),
                 new OfferEvaluator(
                         frameworkStore,
                         stateStore,
@@ -130,7 +128,7 @@ public class DefaultRecoveryPlanManagerTest extends DefaultCapabilitiesTestSuite
                         true),
                 stateStore);
         planCoordinator =
-                new DefaultPlanCoordinator(serviceSpec.getName(), Arrays.asList(mockDeployManager, recoveryManager));
+                new DefaultPlanCoordinator(Arrays.asList(mockDeployManager, recoveryManager));
     }
 
     @Test

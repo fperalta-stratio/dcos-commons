@@ -112,12 +112,12 @@ public class ServiceTest {
             if (resourceNamespace != null) {
                 // All task+executor resources should have a 'namespace' label
                 for (Protos.Resource resource : ResourceUtils.getAllResources(launchedTask.getTask())) {
-                    Assert.assertEquals(resourceNamespace, ResourceUtils.getResourceNamespace(resource).get());
+                    Assert.assertEquals(resourceNamespace, ResourceUtils.getNamespace(resource).get());
                 }
             } else {
                 // All task+executor resources should NOT have a 'namespace' label
                 for (Protos.Resource resource : ResourceUtils.getAllResources(launchedTask.getTask())) {
-                    Assert.assertFalse(ResourceUtils.getResourceNamespace(resource).isPresent());
+                    Assert.assertFalse(ResourceUtils.getNamespace(resource).isPresent());
                 }
             }
         }

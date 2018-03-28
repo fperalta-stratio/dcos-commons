@@ -2,8 +2,9 @@ package com.mesosphere.sdk.kafka.api;
 
 import com.mesosphere.sdk.http.ResponseUtils;
 import com.mesosphere.sdk.kafka.cmd.CmdExecutor;
+import com.mesosphere.sdk.offer.LoggingUtils;
+
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -20,7 +21,7 @@ import java.util.List;
 
 @Path("/v1/topics")
 public class TopicResource {
-    private static final Logger log = LoggerFactory.getLogger(TopicResource.class);
+    private static final Logger log = LoggingUtils.getLogger(TopicResource.class);
 
     private final KafkaZKClient kafkaZkClient;
     private final CmdExecutor cmdExecutor;

@@ -51,7 +51,7 @@ public class UninstallPlanFactory {
             StateStore stateStore,
             SchedulerConfig schedulerConfig,
             Optional<SecretsClient> customSecretsClientForTests) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
+        this.logger = LoggingUtils.getLogger(getClass());
 
         List<Phase> phases = new ArrayList<>();
 

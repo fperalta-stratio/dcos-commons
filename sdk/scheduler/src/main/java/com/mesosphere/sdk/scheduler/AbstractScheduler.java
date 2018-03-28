@@ -35,7 +35,7 @@ public abstract class AbstractScheduler implements MesosEventClient {
 
     // These are all (re)assigned when the scheduler has (re)registered:
     private ReviveManager reviveManager;
-    private Reconciler reconciler;
+    private ExplicitReconciler reconciler;
 
     protected AbstractScheduler(
             ServiceSpec serviceSpec,
@@ -96,8 +96,8 @@ public abstract class AbstractScheduler implements MesosEventClient {
     @Override
     public void registered(boolean reRegistered) {
         if (!reRegistered) {
-            this.reviveManager = new ReviveManager(serviceSpec.getName());
-            this.reconciler = new Reconciler(serviceSpec.getName(), stateStore);
+            this.reviveManager = new ReviveManager();
+            this.reconciler = new ExplicitReconciler(stateStore);
             registeredWithMesos();
         }
         // Explicit task reconciliation should be (re)started on all (re-)registrations.

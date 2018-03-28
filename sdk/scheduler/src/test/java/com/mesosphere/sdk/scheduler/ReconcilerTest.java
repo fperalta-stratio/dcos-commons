@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Tests for {@link Reconciler}.
+ * Tests for {@link ExplicitReconciler}.
  */
 public class ReconcilerTest {
 
@@ -213,11 +213,11 @@ public class ReconcilerTest {
     /**
      * A Reconciler with adjustable 'now'
      */
-    private static class TestReconciler extends Reconciler {
+    private static class TestReconciler extends ExplicitReconciler {
         private long nowMs;
 
         private TestReconciler(StateStore store, long nowMs) {
-            super("foo", store);
+            super(store);
             setNowMs(nowMs);
         }
 

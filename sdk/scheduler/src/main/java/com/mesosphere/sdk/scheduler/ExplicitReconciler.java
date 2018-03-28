@@ -18,9 +18,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The Reconciler synchronizes the Framework's task state with what Mesos reports, with Mesos as source of truth.
+ * Synchronizes the service's task state with what Mesos reports, with Mesos as source of truth.
+ *
+ * This differs from Implicit Reconciliation in two ways:
+ * <ul><li>Explicit Reconciliation is tied to a specific set of tasks, and is therefore service-specific rather than
+ * framework-wide.</li>
+ * <li>While Implicit Reconciliation is run periodically on a timer, Explicit Reconciliation is only performed once on
+ * service startup.</li></ul>
  */
-public class Reconciler {
+public class ExplicitReconciler {
 
     // Exponential backoff between explicit reconcile requests: minimum 8s, maximum 30s
     private static final int MULTIPLIER = 2;
@@ -36,8 +42,8 @@ public class Reconciler {
     private long lastRequestTimeMs;
     private long backOffMs;
 
-    public Reconciler(String serviceName, StateStore stateStore) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
+    public ExplicitReconciler(StateStore stateStore) {
+        this.logger = LoggingUtils.getLogger(getClass());
         this.stateStore = stateStore;
         resetTimerValues();
     }

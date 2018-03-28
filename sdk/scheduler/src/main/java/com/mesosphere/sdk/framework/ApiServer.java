@@ -5,7 +5,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.scheduler.Metrics;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
-import com.mesosphere.sdk.scheduler.SchedulerUtils;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -96,7 +95,7 @@ public class ApiServer {
             public void run() {
                 if (!server.isStarted()) {
                     LOGGER.error("API Server failed to start at port {} within {}ms", port, startTimeout.toMillis());
-                    SchedulerUtils.hardExit(ExitCode.API_SERVER_ERROR);
+                    ProcessExit.exit(ProcessExit.API_SERVER_ERROR);
                 }
             }
         }, startTimeout.toMillis());
@@ -112,7 +111,7 @@ public class ApiServer {
                     server.join();
                 } catch (Exception e) {
                     LOGGER.error(String.format("API server at port %d failed with exception: ", port), e);
-                    SchedulerUtils.hardExit(ExitCode.API_SERVER_ERROR, e);
+                    ProcessExit.exit(ProcessExit.API_SERVER_ERROR, e);
                 } finally {
                     LOGGER.info("API server at port {} exiting", port);
                     try {

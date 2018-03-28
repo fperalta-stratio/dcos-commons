@@ -43,19 +43,17 @@ public class ReviveManager {
     /**
      * Creates an instance using the singleton {@link TokenBucket} instance. The {@link TokenBucket} is a singleton
      * because we want rate limits to be enforced across all running services in the scheduler.
-     *
-     * @param serviceName the name of the service, used for logging
      */
-    public ReviveManager(String serviceName) {
-        this(serviceName, TOKEN_BUCKET_INSTANCE);
+    public ReviveManager() {
+        this(TOKEN_BUCKET_INSTANCE);
     }
 
     /**
      * Creates an instance with a custom {@link TokenBucket} instead of the singleton instance. Only for use in tests.
      */
     @VisibleForTesting
-    ReviveManager(String serviceName, TokenBucket tokenBucket) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
+    ReviveManager(TokenBucket tokenBucket) {
+        this.logger = LoggingUtils.getLogger(getClass());
         this.tokenBucket = tokenBucket;
     }
 

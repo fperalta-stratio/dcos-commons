@@ -32,7 +32,6 @@ public class Constants {
     /** The name used for GPU resources. */
     public static final String GPUS_RESOURCE_TYPE = "gpus";
 
-
     /**
      * The amount of additional CPU to require for the default executor.
      * Not applicable for the old custom executor.

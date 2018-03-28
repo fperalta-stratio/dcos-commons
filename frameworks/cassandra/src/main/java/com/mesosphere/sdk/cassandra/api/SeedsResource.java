@@ -1,7 +1,8 @@
 package com.mesosphere.sdk.cassandra.api;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.mesosphere.sdk.offer.LoggingUtils;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -18,7 +19,7 @@ import java.util.Set;
  */
 @Path("/v1/seeds")
 public class SeedsResource {
-    private static final Logger LOGGER = LoggerFactory.getLogger(SeedsResource.class);
+    private static final Logger LOGGER = LoggingUtils.getLogger(SeedsResource.class);
 
     private final Set<String> configuredSeeds;
 

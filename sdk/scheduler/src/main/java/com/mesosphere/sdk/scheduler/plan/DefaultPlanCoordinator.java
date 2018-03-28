@@ -18,11 +18,11 @@ public class DefaultPlanCoordinator implements PlanCoordinator {
     private final Logger logger;
     private final List<PlanManager> planManagers = new LinkedList<>();
 
-    public DefaultPlanCoordinator(String serviceName, Collection<PlanManager> planManagers) {
+    public DefaultPlanCoordinator(Collection<PlanManager> planManagers) {
         if (CollectionUtils.isEmpty(planManagers)) {
             throw new IllegalArgumentException("At least one plan manager is required");
         }
-        this.logger = LoggingUtils.getLogger(getClass(), serviceName);
+        this.logger = LoggingUtils.getLogger(getClass());
         this.planManagers.addAll(planManagers);
     }
 

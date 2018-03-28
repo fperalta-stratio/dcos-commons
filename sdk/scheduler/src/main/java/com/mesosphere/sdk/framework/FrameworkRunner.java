@@ -9,7 +9,6 @@ import com.mesosphere.sdk.offer.Constants;
 import com.mesosphere.sdk.offer.LoggingUtils;
 import com.mesosphere.sdk.scheduler.MesosEventClient;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
-import com.mesosphere.sdk.scheduler.SchedulerUtils;
 import com.mesosphere.sdk.scheduler.AbstractScheduler;
 import com.mesosphere.sdk.scheduler.plan.DefaultPlan;
 import com.mesosphere.sdk.scheduler.plan.DefaultPlanManager;
@@ -83,7 +82,7 @@ public class FrameworkRunner {
 
             runSkeletonScheduler(schedulerConfig);
             // The skeleton scheduler should never exit. But just in case...:
-            SchedulerUtils.hardExit(ExitCode.DRIVER_EXITED);
+            ProcessExit.exit(ProcessExit.DRIVER_EXITED);
         }
 
         FrameworkStore frameworkStore = new FrameworkStore(persister);
@@ -118,7 +117,7 @@ public class FrameworkRunner {
             // Following Mesos driver thread exit, attach to the API server thread. It should run indefinitely.
             httpServer.join();
         }
-        SchedulerUtils.hardExit(ExitCode.DRIVER_EXITED);
+        ProcessExit.exit(ProcessExit.DRIVER_EXITED);
     }
 
     @VisibleForTesting
@@ -148,7 +147,7 @@ public class FrameworkRunner {
         }
 
         Capabilities capabilities = Capabilities.getInstance();
-        if (capabilities.supportsGpuResource() && usingGpus) {
+        if (usingGpus && capabilities.supportsGpuResource()) {
             fwkInfoBuilder.addCapabilitiesBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.GPU_RESOURCES);
         }
@@ -158,7 +157,7 @@ public class FrameworkRunner {
         }
 
         // Only enable if opted-in by the developer or user.
-        if (capabilities.supportsDomains() && usingRegions) {
+        if (usingRegions && capabilities.supportsDomains()) {
             fwkInfoBuilder.addCapabilitiesBuilder()
                     .setType(Protos.FrameworkInfo.Capability.Type.REGION_AWARE);
         }

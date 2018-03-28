@@ -17,6 +17,12 @@ import com.mesosphere.sdk.scheduler.SchedulerConfig;
  * Periodically triggers implicit reconciliation of all tasks being managed by the scheduler.
  * Mesos recommends that schedulers trigger an implicit reconciliation occasionally.
  *
+ * This differs from Explicit Reconciliation in two ways:
+ * <ul><li>Explicit Reconciliation is tied to a specific set of tasks, and is therefore service-specific rather than
+ * framework-wide.</li>
+ * <li>While Implicit Reconciliation is run periodically on a timer, Explicit Reconciliation is only performed once on
+ * service startup.</li></ul>
+ *
  * @see http://mesos.apache.org/documentation/latest/reconciliation/
  */
 class ImplicitReconciler {

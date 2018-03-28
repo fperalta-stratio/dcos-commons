@@ -20,7 +20,7 @@ public class PersistentLaunchRecorder {
     private final ServiceSpec serviceSpec;
 
     public PersistentLaunchRecorder(StateStore stateStore, ServiceSpec serviceSpec) {
-        this.logger = LoggingUtils.getLogger(getClass(), serviceSpec.getName());
+        this.logger = LoggingUtils.getLogger(getClass());
         this.stateStore = stateStore;
         this.serviceSpec = serviceSpec;
     }

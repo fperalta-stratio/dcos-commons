@@ -113,14 +113,6 @@ public class ResourceUtils {
         return getResourceId(resource).isPresent();
     }
 
-    public static Optional<String> getResourceNamespace(Protos.Resource resource) {
-        Optional<Protos.Resource.ReservationInfo> reservationInfo = getReservation(resource);
-        if (!reservationInfo.isPresent()) {
-            return Optional.empty();
-        }
-        return AuxLabelAccess.getResourceNamespace(reservationInfo.get());
-    }
-
     public static Optional<String> getPersistenceId(Protos.Resource resource) {
         if (resource.hasDisk() && resource.getDisk().hasPersistence()) {
             return Optional.of(resource.getDisk().getPersistence().getId());

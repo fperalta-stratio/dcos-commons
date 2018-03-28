@@ -1,6 +1,5 @@
 package com.mesosphere.sdk.scheduler;
 
-import com.mesosphere.sdk.framework.ExitCode;
 import com.mesosphere.sdk.storage.PersisterUtils;
 
 /**
@@ -41,27 +40,5 @@ public class SchedulerUtils {
         name = name.replace(PersisterUtils.PATH_DELIM_STR, SLASH_REPLACEMENT);
 
         return name;
-    }
-
-    /**
-     * Immediately exits the process with the ordinal value of the provided {@code errorCode}.
-     */
-    @SuppressWarnings("DM_EXIT")
-    public static void hardExit(ExitCode errorCode) {
-        String message =
-                String.format("Scheduler exiting immediately with code: %s[%d]", errorCode, errorCode.getValue());
-        System.err.println(message);
-        System.out.println(message);
-        System.exit(errorCode.getValue());
-    }
-
-    /**
-     * Similar to {@link #hardExit(ExitCode)}, except also prints the stack trace of the provided exception before
-     * exiting the process. This may be used in contexts where the process is exiting in response to a thrown exception.
-     */
-    public static void hardExit(ExitCode errorCode, Throwable e) {
-        e.printStackTrace(System.err);
-        e.printStackTrace(System.out);
-        hardExit(errorCode);
     }
 }
