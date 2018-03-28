@@ -1,4 +1,4 @@
-package com.mesosphere.sdk.scheduler;
+package com.mesosphere.sdk.framework;
 
 import java.util.HashMap;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.mesosphere.sdk.scheduler.SchedulerConfig;
 
 /**
  * Utility class for grabbing values from a mapping of flag values (typically the process env).

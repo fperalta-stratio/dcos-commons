@@ -14,6 +14,7 @@ import com.mesosphere.sdk.dcos.DcosHttpExecutor;
 import com.mesosphere.sdk.dcos.auth.CachedTokenProvider;
 import com.mesosphere.sdk.dcos.auth.TokenProvider;
 import com.mesosphere.sdk.dcos.clients.ServiceAccountIAMTokenClient;
+import com.mesosphere.sdk.framework.EnvStore;
 import com.mesosphere.sdk.generated.SDKBuildInfo;
 import com.mesosphere.sdk.offer.LoggingUtils;
 

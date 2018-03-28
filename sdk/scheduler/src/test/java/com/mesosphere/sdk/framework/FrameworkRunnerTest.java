@@ -15,7 +15,6 @@ import org.mockito.MockitoAnnotations;
 import com.mesosphere.sdk.dcos.Capabilities;
 import com.mesosphere.sdk.dcos.DcosConstants;
 import com.mesosphere.sdk.offer.Constants;
-import com.mesosphere.sdk.scheduler.EnvStore;
 import com.mesosphere.sdk.scheduler.MesosEventClient;
 import com.mesosphere.sdk.scheduler.SchedulerConfig;
 import com.mesosphere.sdk.scheduler.plan.Status;

@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.collect.ImmutableList;
 import com.mesosphere.sdk.dcos.DcosConstants;
 import com.mesosphere.sdk.offer.Constants;
-import com.mesosphere.sdk.scheduler.EnvStore;
 import com.mesosphere.sdk.scheduler.SchedulerUtils;
 import com.mesosphere.sdk.specification.ServiceSpec;
 import com.mesosphere.sdk.specification.yaml.RawServiceSpec;

@@ -6,6 +6,8 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.mesosphere.sdk.framework.EnvStore;
+
 public class SchedulerConfigTest {
 
     @Test
