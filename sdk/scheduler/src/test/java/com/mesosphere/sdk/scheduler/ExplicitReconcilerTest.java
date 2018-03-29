@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * Tests for {@link ExplicitReconciler}.
  */
-public class ReconcilerTest {
+public class ExplicitReconcilerTest {
 
     private static final Protos.TaskStatus TASK_STATUS_1 = Protos.TaskStatus.newBuilder()
             .setTaskId(Protos.TaskID.newBuilder().setValue("task-1").build())
