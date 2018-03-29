@@ -34,11 +34,11 @@ public class AbstractSchedulerTest {
 
     private StateStore stateStore;
 
+    @Mock private ConfigStore<ServiceSpec> mockConfigStore;
     @Mock private ServiceSpec mockServiceSpec;
     @Mock private SchedulerDriver mockSchedulerDriver;
     @Mock private SecretsClient mockSecretsClient;
     @Mock private PlanCoordinator mockPlanCoordinator;
-    @Mock private ConfigStore<ServiceSpec> mockConfigStore;
 
     @Before
     public void beforeEach() throws Exception {

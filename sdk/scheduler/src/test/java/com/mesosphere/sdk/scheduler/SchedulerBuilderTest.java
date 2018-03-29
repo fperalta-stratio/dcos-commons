@@ -174,6 +174,7 @@ public class SchedulerBuilderTest {
         Assert.assertFalse(updatedServiceSpec.getPods().get(0).getPlacementRule().isPresent());
 
         // Not hit since unsupported by cluster:
+        verify(mockCapabilities, atLeastOnce()).supportsDomains();
         verify(mockSchedulerConfig, never()).isRegionAwarenessEnabled();
         verify(mockSchedulerConfig, never()).getSchedulerRegion();
     }

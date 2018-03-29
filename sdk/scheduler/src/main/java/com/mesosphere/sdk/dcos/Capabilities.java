@@ -101,8 +101,8 @@ public class Capabilities {
 
     public boolean supportsDomains() {
         // A given DC/OS cluster may or may not have domain information available in Offers.  This information is
-        // dependent upon the cluster operator and is unknown to the scheduler.  However it is only possible that
-        // domain information be present in DC/OS 1.11+ clusters.
+        // dependent upon the cluster operator and is unknown to the scheduler.  However domain information is only
+        // present on DC/OS 1.11+ clusters.
         return hasOrExceedsVersion(1, 11);
     }
 

@@ -226,18 +226,21 @@ public class PortEvaluationStageTest extends DefaultCapabilitiesTestSuite {
         Assert.assertTrue(String.format("podInfoBuilder has incorrect number of pre-assigned overlay ports " +
                         "should be 1, got %s", podInfoBuilder.getAssignedOverlayPorts().size()),
                 podInfoBuilder.getAssignedOverlayPorts().size() == 1);
-        MesosResourcePool mesosResourcePool = new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE));
+
         PortEvaluationStage portEvaluationStage_ = new PortEvaluationStage(
                 portSpec, TestConstants.TASK_NAME, Optional.empty(), Optional.empty());
-        EvaluationOutcome outcome0 = portEvaluationStage_.evaluate(mesosResourcePool, podInfoBuilder);
+        EvaluationOutcome outcome0 = portEvaluationStage_.evaluate(
+                new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)), podInfoBuilder);
         Assert.assertTrue(outcome0.isPassing());
         Assert.assertEquals(0, outcome0.getOfferRecommendations().size());
+
         PortEvaluationStage portEvaluationStage = new PortEvaluationStage(
                 dynamPortSpec, TestConstants.TASK_NAME, Optional.empty(), Optional.empty());
         EvaluationOutcome outcome1 = portEvaluationStage.evaluate(
                 new MesosResourcePool(offer, Optional.of(Constants.ANY_ROLE)), podInfoBuilder);
         Assert.assertTrue(outcome1.isPassing());
         Assert.assertEquals(0, outcome1.getOfferRecommendations().size());
+
         Assert.assertTrue(String.format("podInfoBuilder has incorrect number of assigned overlay ports, " +
                         "should be 2 got %s", podInfoBuilder.getAssignedOverlayPorts().size()),
                 podInfoBuilder.getAssignedOverlayPorts().size() == 2);

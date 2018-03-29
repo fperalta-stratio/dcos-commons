@@ -28,8 +28,7 @@ public class RawServiceSpec {
     private static final Logger LOGGER = LoggingUtils.getLogger(RawServiceSpec.class);
     private static final ObjectMapper YAML_MAPPER = new ObjectMapper(new YAMLFactory());
     static {
-        // If the user provides duplicate fields (e.g. 'count' twice), throw an error instead of silently dropping
-        // data:
+        // If the user provides duplicate fields (e.g. 'count' twice), throw an error instead of silently dropping data:
         YAML_MAPPER.enable(JsonParser.Feature.STRICT_DUPLICATE_DETECTION);
     }
 

@@ -455,10 +455,7 @@ public class ServiceTestRunner {
     }
 
     private static Map<String, String> getTaskEnv(
-            ServiceSpec serviceSpec,
-            PodInstance podInstance,
-            TaskSpec taskSpec,
-            SchedulerConfig schedulerConfig) {
+            ServiceSpec serviceSpec, PodInstance podInstance, TaskSpec taskSpec, SchedulerConfig schedulerConfig) {
         Map<String, String> taskEnv = new HashMap<>();
         taskEnv.putAll(
                 PodInfoBuilder.getTaskEnvironment(serviceSpec.getName(), podInstance, taskSpec, schedulerConfig));

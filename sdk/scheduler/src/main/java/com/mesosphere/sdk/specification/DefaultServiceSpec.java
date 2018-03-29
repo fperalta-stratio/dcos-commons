@@ -186,10 +186,10 @@ public class DefaultServiceSpec implements ServiceSpec {
         builder.user = copy.getUser();
         builder.goalState = copy.getGoal();
         builder.region = copy.getRegion().orElse(null);
-        builder.zookeeperConnection = copy.getZookeeperConnection();
         builder.webUrl = copy.getWebUrl();
-        builder.pods = copy.getPods();
+        builder.zookeeperConnection = copy.getZookeeperConnection();
         builder.replacementFailurePolicy = copy.getReplacementFailurePolicy().orElse(null);
+        builder.pods = copy.getPods();
         return builder;
     }
 
@@ -213,9 +213,14 @@ public class DefaultServiceSpec implements ServiceSpec {
         return user;
     }
 
-    @JsonProperty("goal")
+    @Override
     public GoalState getGoal() {
         return goalState;
+    }
+
+    @Override
+    public Optional<String> getRegion() {
+        return Optional.ofNullable(region);
     }
 
     @Override
@@ -236,11 +241,6 @@ public class DefaultServiceSpec implements ServiceSpec {
     @Override
     public List<PodSpec> getPods() {
         return pods;
-    }
-
-    @Override
-    public Optional<String> getRegion() {
-        return Optional.ofNullable(region);
     }
 
     @Override
@@ -296,9 +296,8 @@ public class DefaultServiceSpec implements ServiceSpec {
      * consistently serialize/deserialize the provided {@code ServiceSpecification} instance.
      *
      * @param serviceSpec                  specification to test for successful serialization/deserialization
-     * @param additionalSubtypesToRegister any class subtypes which should be registered with
-     *                                     Jackson for deserialization. any custom placement rule implementations
-     *                                     must be provided
+     * @param additionalSubtypesToRegister any class subtypes which should be registered with Jackson for
+     *                                     deserialization. any custom placement rule implementations must be provided
      * @throws IllegalArgumentException    if testing the provided specification fails
      */
     public static ConfigurationFactory<ServiceSpec> getConfigurationFactory(
@@ -616,8 +615,7 @@ public class DefaultServiceSpec implements ServiceSpec {
         }
 
         /**
-         * Sets the {@code user} and returns a reference to this Builder so that the methods can be chained
-         * together.
+         * Sets the {@code user} and returns a reference to this Builder so that the methods can be chained together.
          *
          * @param user the {@code user} to set
          * @return a reference to this Builder
@@ -640,6 +638,17 @@ public class DefaultServiceSpec implements ServiceSpec {
         }
 
         /**
+         * Sets the {@code region} and returns a reference to this Builder so that the methods can be chained together.
+         *
+         * @param region the {@code region} to set
+         * @return a reference to this Builder
+         */
+        public Builder region(String region) {
+            this.region = region;
+            return this;
+        }
+
+        /**
          * Sets the advertised web UI URL for the service and returns a reference to this Builder so that the methods
          * can be chained together.
          *
@@ -648,18 +657,6 @@ public class DefaultServiceSpec implements ServiceSpec {
          */
         public Builder webUrl(String webUrl) {
             this.webUrl = webUrl;
-            return this;
-        }
-
-        /**
-         * Sets the {@code region} and returns a reference to this Builder so that the methods can be chained
-         * together.
-         *
-         * @param region the {@code region} to set
-         * @return a reference to this Builder
-         */
-        public Builder region(String region) {
-            this.region = region;
             return this;
         }
 

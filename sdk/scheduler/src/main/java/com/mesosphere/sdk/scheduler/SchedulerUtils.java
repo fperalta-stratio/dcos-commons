@@ -38,7 +38,6 @@ public class SchedulerUtils {
 
         // Replace any other slashes (e.g. from folder support) with double underscores:
         name = name.replace(PersisterUtils.PATH_DELIM_STR, SLASH_REPLACEMENT);
-
         return name;
     }
 }
