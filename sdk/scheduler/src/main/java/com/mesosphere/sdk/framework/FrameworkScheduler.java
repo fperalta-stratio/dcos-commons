@@ -36,13 +36,13 @@ public class FrameworkScheduler implements Scheduler {
      * Mesos may call registered() multiple times in the lifespan of a Scheduler process, specifically when there's
      * master re-election. Avoid performing initialization multiple times, which would cause queues to be stuck.
      */
-    private final AtomicBoolean isRegisterStarted = new AtomicBoolean(false);
+    private final AtomicBoolean registerCalled = new AtomicBoolean(false);
 
     /**
      * Tracks whether the API Server has entered a started state. We avoid launching tasks until after the API server is
      * started, because when tasks launch they typically require access to ArtifactResource for config templates.
      */
-    private final AtomicBoolean readyToAcceptOffers = new AtomicBoolean(false);
+    private final AtomicBoolean apiServerStarted = new AtomicBoolean(false);
 
     private final Set<String> frameworkRolesWhitelist;
     private final FrameworkStore frameworkStore;
@@ -83,8 +83,8 @@ public class FrameworkScheduler implements Scheduler {
      *
      * @return {@code this}
      */
-    public FrameworkScheduler setReadyToAcceptOffers() {
-        readyToAcceptOffers.set(true);
+    public FrameworkScheduler setApiServerStarted() {
+        apiServerStarted.set(true);
         return this;
     }
 
@@ -103,7 +103,7 @@ public class FrameworkScheduler implements Scheduler {
 
     @Override
     public void registered(SchedulerDriver driver, Protos.FrameworkID frameworkId, Protos.MasterInfo masterInfo) {
-        if (isRegisterStarted.getAndSet(true)) {
+        if (registerCalled.getAndSet(true)) {
             // This may occur as the result of a master election.
             LOGGER.info("Already registered, calling reregistered()");
             reregistered(driver, masterInfo);
@@ -138,7 +138,7 @@ public class FrameworkScheduler implements Scheduler {
     public void resourceOffers(SchedulerDriver driver, List<Protos.Offer> offers) {
         Metrics.incrementReceivedOffers(offers.size());
 
-        if (!readyToAcceptOffers.get()) {
+        if (!apiServerStarted.get()) {
             LOGGER.info("Declining {} offer{}: Waiting for API Server to start.",
                     offers.size(), offers.size() == 1 ? "" : "s");
             OfferProcessor.declineShort(offers);

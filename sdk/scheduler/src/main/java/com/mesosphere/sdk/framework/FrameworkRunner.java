@@ -100,7 +100,7 @@ public class FrameworkRunner {
                 // - We accept an offer/launch a task
                 // - The task has config templates to be retrieved from the scheduler HTTP service...
                 // - ... but the scheduler hasn't finishing launching its HTTP service
-                frameworkScheduler.setReadyToAcceptOffers();
+                frameworkScheduler.setApiServerStarted();
             }
         });
 

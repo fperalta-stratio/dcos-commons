@@ -351,7 +351,7 @@ public class ServiceTestRunner {
                         persister,
                         new FrameworkStore(persister),
                         abstractScheduler)
-                .setReadyToAcceptOffers()
+                .setApiServerStarted()
                 .disableThreading();
 
         // Test 4: Can we render the per-task config templates without any missing values?
