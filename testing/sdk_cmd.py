@@ -126,22 +126,15 @@ def svc_cli(package_name, service_name, service_cmd, json=False, print_output=Tr
         return get_json_output(full_cmd, print_output=print_output)
 
 
-def run_raw_cli(cmd, print_output=True):
-    """Runs the command with `dcos` as the prefix to the shell command
-    and returns the resulting output (stdout seperated from stderr by a newline).
-
-    eg. `cmd`= "package install <package-name>" results in:
-    $ dcos package install <package-name>
-    """
-    dcos_cmd = "dcos {}".format(cmd)
-    log.info("(CLI) {}".format(dcos_cmd))
-    result = subprocess.run([dcos_cmd], shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+def run_command(command: str, print_output=True) -> (int, str, str):
+    result = subprocess.run(command,
+                            shell=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
     stdout = ""
     stderr = ""
-
     if result.stdout:
         stdout = result.stdout.decode('utf-8').strip()
-
     if result.stderr:
         stderr = result.stderr.decode('utf-8').strip()
 
@@ -152,6 +145,27 @@ def run_raw_cli(cmd, print_output=True):
             log.info("STDERR:\n{}".format(stderr))
 
     return result.returncode, stdout, stderr
+
+
+
+def run_raw_cli(cmd, print_output=True):
+    """Runs the command with `dcos` as the prefix to the shell command
+    and returns the resulting output (stdout separated from stderr by a newline).
+
+    eg. `cmd`= "package install <package-name>" results in:
+    $ dcos package install <package-name>
+    """
+    dcos_cmd = "dcos {}".format(cmd)
+    log.info("(CLI) {}".format(dcos_cmd))
+    return run_command(dcos_cmd, print_output)
+
+
+def dcos_version() -> str:
+    _, version, _ = run_command(
+        "dcos --version | grep dcos.version | cut -d'=' -f2",
+        print_output=False
+    )
+    return version
 
 
 def run_cli(cmd, print_output=True, return_stderr_in_stdout=False):

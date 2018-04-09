@@ -29,10 +29,14 @@ aws_profile="default"
 enterprise="true"
 interactive="false"
 headless="false"
+package_registry="false"
+
+# TODO Remove stub. We should install from the bootstrap registry.
+PACKAGE_REGISTRY_STUB_URL="https://downloads.mesosphere.com/package-registry/0.1.0-SNAPSHOT-0.1.0-SNAPSHOT-406-7ef2a69/stub-universe-registry.json"
 
 function usage()
 {
-    echo "Usage: $0 [-m MARKEXPR] [-k EXPRESSION] [-p PATH] [-s] [-i|--interactive] [--headless] [--aws|-a PATH] [--aws-profile PROFILE] [all|<framework-name>]"
+    echo "Usage: $0 [-m MARKEXPR] [-k EXPRESSION] [-p PATH] [-s] [-i|--interactive] [--headless] [--package-registry] [--dcos-files-path DCOS_FILES_PATH] [--aws|-a PATH] [--aws-profile PROFILE] [all|<framework-name>]"
     echo "-m passed to pytest directly [default -m \"${pytest_m}\"]"
     echo "-k passed to pytest directly [default NONE]"
     echo "   Additional pytest arguments can be passed in the PYTEST_ARGS"
@@ -42,6 +46,8 @@ function usage()
     echo "-s run in strict mode (sets \$SECURITY=\"strict\")"
     echo "--interactive start a docker container in interactive mode"
     echo "--headless leave STDIN available (mutually exclusive with --interactive)"
+    echo "--package-registry Use package registry to install packages"
+    echo "--dcos-files-path DCOS_FILES_PATH sets the path to look for .dcos files. If empty, use stub universe urls to build .dcos file(s)."
     echo "--gradle-cache PATH sets the gradle cache to the specified path [default ${gradle_cache}]."
     echo "               Setting PATH to \"\" will disable the cache."
     echo "--aws-profile PROFILE the AWS profile to use [default ${aws_profile}]"
@@ -115,6 +121,13 @@ case $key in
     --headless)
     headless="true"
     ;;
+    --package-registry)
+    package_registry="true"
+    ;;
+    --dcos-files-path)
+    dcos_files_path="$2"
+    shift
+    ;;
     --gradle-cache)
     gradle_cache="$2"
     shift
@@ -173,6 +186,7 @@ fi
 
 echo "interactive=$interactive"
 echo "headless=$headless"
+echo "package-registry=${package_registry}"
 echo "security=$security"
 echo "enterprise=$enterprise"
 
@@ -250,16 +264,19 @@ docker run --rm \
     -e DCOS_LOGIN_PASSWORD="$DCOS_LOGIN_PASSWORD" \
     -e CLUSTER_URL="$CLUSTER_URL" \
     -e S3_BUCKET="$S3_BUCKET" \
-    $azure_args \
+    ${azure_args} \
     -e SECURITY="$security" \
     -e PYTEST_ARGS="$PYTEST_ARGS" \
-    $FRAMEWORK_ARGS \
+    ${FRAMEWORK_ARGS} \
     -e STUB_UNIVERSE_URL="$STUB_UNIVERSE_URL" \
+    -e PACKAGE_REGISTRY_ENABLED="${package_registry}" \
+    -e PACKAGE_REGISTRY_STUB_URL="${PACKAGE_REGISTRY_STUB_URL}" \
+    -e DCOS_FILES_PATH="${dcos_files_path}" \
     -v $(pwd):$WORK_DIR \
     -v $ssh_path:/ssh/key \
     -w $WORK_DIR \
     -t \
-    $DOCKER_INTERACTIVE_FLAGS \
-    $DOCKER_ARGS \
+    ${DOCKER_INTERACTIVE_FLAGS} \
+    ${DOCKER_ARGS} \
     mesosphere/dcos-commons:latest \
-    $DOCKER_COMMAND
+    ${DOCKER_COMMAND}
