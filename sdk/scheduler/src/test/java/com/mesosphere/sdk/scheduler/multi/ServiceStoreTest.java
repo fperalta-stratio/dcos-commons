@@ -1,4 +1,4 @@
-package com.mesosphere.sdk.helloworld.scheduler;
+package com.mesosphere.sdk.scheduler.multi;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -10,12 +10,12 @@ import org.junit.Test;
 import com.mesosphere.sdk.storage.MemPersister;
 import com.mesosphere.sdk.storage.Persister;
 
-public class ExampleServiceStoreTest {
+public class ServiceStoreTest {
 
     @Test
     public void testBasicFunctionality() throws Exception {
         Persister persister = new MemPersister();
-        ExampleServiceStore store = new ExampleServiceStore(persister);
+        ServiceStore store = new ServiceStore(persister);
 
         Assert.assertFalse(store.get("foo").isPresent());
         Assert.assertTrue(store.list().isEmpty());
@@ -36,13 +36,13 @@ public class ExampleServiceStoreTest {
         Assert.assertEquals("bazz", store.get("baz").get());
         Assert.assertFalse(store.get("bar").isPresent());
 
-        store.remove("foo");
+        store.getUninstallCallback().uninstalled("foo");
 
         Assert.assertEquals(Collections.singletonMap("baz", "bazz"), store.list());
         Assert.assertFalse(store.get("foo").isPresent());
         Assert.assertEquals("bazz", store.get("baz").get());
 
-        store.remove("baz");
+        store.getUninstallCallback().uninstalled("baz");
 
         Assert.assertFalse(store.get("foo").isPresent());
         Assert.assertTrue(store.list().isEmpty());
@@ -51,7 +51,7 @@ public class ExampleServiceStoreTest {
     @Test
     public void testSlashedName() throws Exception {
         Persister persister = new MemPersister();
-        ExampleServiceStore store = new ExampleServiceStore(persister);
+        ServiceStore store = new ServiceStore(persister);
 
         Assert.assertFalse(store.get("/path/to/foo").isPresent());
         Assert.assertTrue(store.list().isEmpty());
@@ -61,7 +61,7 @@ public class ExampleServiceStoreTest {
         Assert.assertEquals(Collections.singletonMap("/path/to/foo", "bar"), store.list());
         Assert.assertEquals("bar", store.get("/path/to/foo").get());
 
-        store.remove("/path/to/foo");
+        store.getUninstallCallback().uninstalled("/path/to/foo");
 
         Assert.assertFalse(store.get("/path/to/foo").isPresent());
         Assert.assertTrue(store.list().isEmpty());
